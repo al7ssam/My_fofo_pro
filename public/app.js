@@ -1,0 +1,320 @@
+/*******************************************************
+ * app.js
+ * صفحة إرسال الطلبات
+ * -----------------------------------------------------
+ * - يقرأ البيانات من servicesData.json (أو من localStorage)
+ * - يملأ قائمة mainCategory، وتقوم الدوال بتعبئة القوائم الفرعية (subCategory, subSubCategory) إن وُجدت.
+ * - يولّد نصًا بصيغة: serviceID | link | quantity
+ * - عند الضغط على "إرسال"، يتم جمع الخدمات المطابقة لاختيارات المستخدم،
+ *   ومن ثم إرسال كل خدمة إلى مزودها عبر خادم البروكسي (Proxy)
+ * - تعرض الدالة رسالة تفصيلية تُظهر عدد الطلبات الناجحة والفاشلة مع أسباب الفشل.
+ *******************************************************/
+
+/**
+ * دالة تعريب رسائل الاستجابة من الإنجليزية إلى العربية.
+ * تُترجم الأخطاء وحالة الطلب والردود الأخرى.
+ */
+function translateResponse(response) {
+  // ترجمة الأخطاء
+  if (response.error) {
+    const errorMap = {
+      "Incorrect order ID": "معرف الطلب غير صحيح",
+      "link_duplicate": "الرابط مستخدم مسبقاً",
+      "neworder.error.link_duplicate": "الرابط مستخدم مسبقاً"
+      // يمكنك إضافة المزيد من الأخطاء هنا إذا لزم الأمر
+    };
+    return errorMap[response.error] || response.error;
+  }
+  
+  // ترجمة حالة الطلب
+  if (response.status) {
+    const statusMap = {
+      "Partial": "جزئي",
+      "In progress": "قيد التنفيذ",
+      "Completed": "مكتمل"
+    };
+    let statusText = statusMap[response.status] || response.status;
+    return `حالة الطلب: ${statusText}\nالرسوم: ${response.charge || ""}\nالبداية: ${response.start_count || ""}\nالمتبقي: ${response.remains || ""}\nالعملة: ${response.currency || ""}`;
+  }
+  
+  // ترجمة الرد عند إضافة الطلب
+  if (response.order) {
+    return `تم إضافة الطلب بنجاح. رقم الطلب: ${response.order}`;
+  }
+  
+  // ترجمة استعلام الرصيد
+  if (response.balance) {
+    return `الرصيد الحالي: ${response.balance} ${response.currency}`;
+  }
+  
+  // ترجمة إعادة التعبئة (Refill)
+  if (response.refill) {
+    return `تم إنشاء إعادة تعبئة بنجاح. رقم إعادة التعبئة: ${response.refill}`;
+  }
+  if (response.refill_status) {
+    const refillMap = {
+      "Completed": "مكتمل",
+      "Rejected": "مرفوض",
+      "In progress": "قيد التنفيذ"
+    };
+    let statusText = refillMap[response.refill_status] || response.refill_status;
+    return `حالة إعادة التعبئة: ${statusText}`;
+  }
+  
+  return JSON.stringify(response);
+}
+
+
+const STORAGE_KEY = 'services_data';
+let globalData = { categories: {}, services: [] };
+
+// ضع مفاتيح الـAPI الخاصة بك هنا:
+const DRD3M_API_KEY = '2a7fbfc1c050307e4db73cdf6954e79a';       
+const SEOCLEVERS_API_KEY = '16e86c9b803ff03e150446716afca496';
+
+// عناوين البروكسي (Proxy) التي يشغلها خادمك المحلي:
+const DRD3M_PROXY_URL = 'http://localhost:3000/api/drd3m';
+const SEOCLEVERS_PROXY_URL = 'http://localhost:3000/api/seoclevers';
+
+/** تحميل البيانات من localStorage أو ملف JSON */
+async function loadData() {
+  const storedData = localStorage.getItem(STORAGE_KEY);
+  if (storedData) {
+    return JSON.parse(storedData);
+  } else {
+    try {
+      const response = await fetch('servicesData.json');
+      if (!response.ok) throw new Error('Network response was not ok: ' + response.status);
+      const jsonData = await response.json();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(jsonData));
+      return jsonData;
+    } catch (error) {
+      console.error('فشل في جلب servicesData.json:', error);
+      const fallbackData = { categories: {}, services: [] };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fallbackData));
+      return fallbackData;
+    }
+  }
+}
+
+/** تعبئة قائمة التصنيفات الرئيسية */
+function populateMainCategories() {
+  const mainCatSelect = document.getElementById('mainCategory');
+  mainCatSelect.innerHTML = '';
+  const catKeys = Object.keys(globalData.categories);
+  if (catKeys.length === 0) return;
+  catKeys.forEach(catKey => {
+    const option = document.createElement('option');
+    option.value = catKey;
+    option.textContent = catKey;
+    mainCatSelect.appendChild(option);
+  });
+}
+
+/** تحديث قائمة التصنيفات الفرعية بناءً على التصنيف الرئيسي */
+function updateSubCategories() {
+  const mainCategory = document.getElementById('mainCategory').value;
+  const subCategory = document.getElementById('subCategory');
+  const subCatLabel = document.getElementById('subCatLabel');
+  subCategory.innerHTML = '';
+  subCategory.style.display = 'none';
+  subCatLabel.style.display = 'none';
+  if (!mainCategory || !globalData.categories[mainCategory]) return;
+  const subCats = globalData.categories[mainCategory].subCategories || {};
+  const subCatKeys = Object.keys(subCats);
+  if (subCatKeys.length > 0) {
+    subCatLabel.style.display = 'block';
+    subCategory.style.display = 'block';
+    subCatKeys.forEach(subCatKey => {
+      const option = document.createElement('option');
+      option.value = subCatKey;
+      option.textContent = subCatKey;
+      subCategory.appendChild(option);
+    });
+    updateSubSubCategories();
+  }
+}
+
+/** تحديث قائمة الباقات (subSubCategory) بناءً على التصنيف الفرعي */
+function updateSubSubCategories() {
+  const mainCategory = document.getElementById('mainCategory').value;
+  const subCatVal = document.getElementById('subCategory').value;
+  const subSubCatSelect = document.getElementById('subSubCategory');
+  const subSubCatLabel = document.getElementById('subSubCategoryLabel');
+  subSubCatSelect.innerHTML = '';
+  subSubCatSelect.style.display = 'none';
+  subSubCatLabel.style.display = 'none';
+  if (!mainCategory || !globalData.categories[mainCategory]) return;
+  const subCats = globalData.categories[mainCategory].subCategories || {};
+  if (!subCatVal || !subCats[subCatVal]) return;
+  const subSubs = subCats[subCatVal].subSubCategories || [];
+  if (subSubs.length > 0) {
+    subSubCatSelect.style.display = 'block';
+    subSubCatLabel.style.display = 'block';
+    subSubs.forEach(ssc => {
+      const option = document.createElement('option');
+      option.value = ssc;
+      option.textContent = ssc;
+      subSubCatSelect.appendChild(option);
+    });
+  }
+}
+
+/** توليد النص النهائي المعروض للمستخدم */
+function generateFormula() {
+  const link = document.getElementById('contentLink').value.trim();
+  if (!link) {
+    document.getElementById('result').value = '';
+    return;
+  }
+  const mainCategory = document.getElementById('mainCategory').value || '';
+  const subCategory = document.getElementById('subCategory').value || '';
+  const subSubCategory = document.getElementById('subSubCategory').value || '';
+
+  // جلب كل الخدمات المطابقة للخيارات
+  const matchedServices = globalData.services.filter(s => 
+    s.mainCategory === mainCategory &&
+    (!subCategory || s.subCategory === subCategory) &&
+    (!subSubCategory || s.subSubCategory === subSubCategory)
+  );
+
+  let formula = matchedServices.map(srv => 
+    `${srv.id} | ${link} | ${srv.quantity}`
+  ).join('\n');
+
+  document.getElementById('result').value = formula;
+}
+
+/** نسخ النص إلى الحافظة */
+function copyToClipboard() {
+  const text = document.getElementById('result').value;
+  if (!text.trim()) {
+    showToast('لا يوجد نص لنسخه!', true);
+    return;
+  }
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('تم نسخ النص بنجاح!'))
+    .catch(() => showToast('فشل النسخ!', true));
+}
+
+/**
+ * إرسال الطلب:
+ * - يجمع كل الخدمات المطابقة
+ * - لكل خدمة: يُرسل طلبًا إلى البروكسي المناسب (حسب provider)
+ * - يعرض تقريرًا نهائيًا يوضح عدد الطلبات الناجحة والفاشلة وأسباب الفشل.
+ */
+async function sendOrder() {
+  const link = document.getElementById('contentLink').value.trim();
+  if (!link) {
+    showToast('الرجاء إدخال الرابط.', true);
+    return;
+  }
+  const mainCategory = document.getElementById('mainCategory').value || '';
+  const subCategory = document.getElementById('subCategory').value || '';
+  const subSubCategory = document.getElementById('subSubCategory').value || '';
+
+  const matchedServices = globalData.services.filter(s => 
+    s.mainCategory === mainCategory &&
+    (!subCategory || s.subCategory === subCategory) &&
+    (!subSubCategory || s.subSubCategory === subSubCategory)
+  );
+
+  if (matchedServices.length === 0) {
+    showToast('لم يتم العثور على خدمات.', true);
+    return;
+  }
+
+  let successes = 0;
+  let fails = 0;
+  let failReasons = [];
+
+  for (let srv of matchedServices) {
+    try {
+      let apiResp = await sendToApi(srv, link);
+      // استخدم دالة الترجمة لتحويل الاستجابة إلى رسالة عربية
+      let translatedMsg = translateResponse(apiResp);
+      if (apiResp && apiResp.order) {
+        successes++;
+        console.log(`طلب الخدمة ${srv.id} تم بنجاح. رقم الطلب: ${apiResp.order}`);
+      } else if (apiResp && apiResp.error) {
+        fails++;
+        failReasons.push(`الخدمة ${srv.id}: ${translatedMsg}`);
+      } else {
+        fails++;
+        failReasons.push(`الخدمة ${srv.id}: استجابة غير متوقعة`);
+      }
+    } catch (err) {
+      fails++;
+      failReasons.push(`الخدمة ${srv.id}: ${err.message || err}`);
+    }
+  }
+
+  const total = matchedServices.length;
+  if (fails === 0) {
+    showToast(`تم إرسال جميع الطلبات بنجاح! (عددها ${successes})`);
+  } else if (successes === 0) {
+    const msg = `فشلت جميع الطلبات (${fails}/${total}).\nالأسباب:\n` + failReasons.join('\n');
+    showToast(msg, true);
+  } else {
+    const msg = `تم إرسال ${successes} من أصل ${total} بنجاح، وفشلت ${fails}.\nالأسباب:\n` + failReasons.join('\n');
+    showToast(msg, true);
+  }
+}
+
+/** إرسال خدمة لمزودها باستخدام خادم البروكسي */
+async function sendToApi(serviceObj, link) {
+  const provider = (serviceObj.provider || '').toLowerCase();
+  let proxyUrl = '';
+  let apiKey = '';
+
+  if (provider === 'drd3m') {
+    proxyUrl = DRD3M_PROXY_URL;
+    apiKey = DRD3M_API_KEY;
+  } else if (provider === 'seoclevers') {
+    proxyUrl = SEOCLEVERS_PROXY_URL;
+    apiKey = SEOCLEVERS_API_KEY;
+  } else {
+    throw new Error('مزود خدمة غير معروف: ' + provider);
+  }
+
+  const postData = {
+    key: apiKey,
+    action: 'add',
+    service: serviceObj.id,
+    link: link,
+    quantity: serviceObj.quantity
+  };
+
+  const formData = new URLSearchParams();
+  for (let k in postData) {
+    formData.append(k, postData[k]);
+  }
+
+  let response = await fetch(proxyUrl, {
+    method: 'POST',
+    body: formData,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
+  let jsonResp = await response.json();
+  return jsonResp;
+}
+
+/** عرض رسالة Toast متعددة الأسطر */
+function showToast(msg, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.innerHTML = msg.replace(/\n/g, '<br>');
+  toast.classList.remove('error');
+  if (isError) toast.classList.add('error');
+  toast.style.display = 'block';
+  setTimeout(() => {
+    toast.style.display = 'none';
+  }, 6000);
+}
+
+/** عند تحميل الصفحة */
+window.addEventListener('DOMContentLoaded', async () => {
+  globalData = await loadData();
+  populateMainCategories();
+  updateSubCategories();
+  generateFormula();
+});

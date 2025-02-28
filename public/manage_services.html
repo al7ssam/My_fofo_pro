@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <!-- لضمان تجاوب الصفحة مع مختلف الأجهزة -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الخدمات والتصنيفات</title>
+  <!-- خط Tajawal -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #1e1e1e;
+      --bg-container: #2a2a2a;
+      --bg-section: #333;
+      --text-color: #eee;
+      --border-color: #444;
+      --secondary-color: #888;
+      --card-bg: #3d3d3d;
+      --card-border: #555;
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      /* ألوان Toast بنمط داكن مع خلفية شفافة وتأثير ضبابي */
+      --toast-bg-success: rgba(0, 0, 0, 0.6);
+      --toast-bg-error: rgba(220, 53, 69, 0.6);
+    }
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      direction: rtl;
+      color: var(--text-color);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      background: var(--bg-container);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 20px;
+      min-height: 80vh;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      font-size: 26px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .desc {
+      font-size: 14px;
+      color: var(--secondary-color);
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      margin: 5px 3px;
+      transition: all 0.2s ease-in-out;
+      color: #fff;
+    }
+    button:hover {
+      transform: scale(1.02);
+      opacity: 0.9;
+    }
+    .editBtn { background: var(--primary-color); }
+    .deleteBtn { background: var(--danger-color); }
+    .addBtn { background: var(--success-color); }
+    .secBtn { background: #444; }
+    .section {
+      margin-bottom: 20px;
+      background: var(--bg-section);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    .sectionHeader {
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: #444;
+      transition: background 0.3s ease;
+    }
+    .sectionHeader strong {
+      color: #fff;
+      font-size: 16px;
+    }
+    .sectionHeader span {
+      font-size: 18px;
+      color: var(--secondary-color);
+      transition: transform 0.2s;
+    }
+    .sectionHeader:hover { background: #555; }
+    .sectionContent {
+      max-height: 0;
+      transition: max-height 0.3s ease;
+      overflow: hidden;
+    }
+    .section.open .sectionContent { max-height: 2000px; }
+    .section.open .sectionHeader span { transform: rotate(180deg); }
+    .sectionContentInner { padding: 10px 15px; }
+    .flexColumn {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    label, input, select {
+      font-size: 14px;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+    input, select {
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      background: #2c2c2c;
+      color: #fff;
+      font-family: 'Tajawal', sans-serif;
+      padding-right: 2rem;
+    }
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background: #2c2c2c
+                  url('data:image/svg+xml;charset=UTF-8,<svg fill="%23bbb" height="24" viewBox="0 0 24 24" width="24"><path d="M7 10l5 5 5-5z"/></svg>')
+                  no-repeat right 0.6rem center/16px 16px;
+      background-position: right 0.7rem center;
+      cursor: pointer;
+    }
+    .searchBox {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .searchBox input {
+      flex: 1;
+    }
+    .searchBox button {
+      background: var(--primary-color);
+    }
+    .servicesGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .serviceCard {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .serviceCard h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #fff;
+    }
+    .serviceCard p {
+      margin: 2px 0;
+      font-size: 13px;
+      color: #ddd;
+      line-height: 1.4;
+    }
+    .serviceActions {
+      margin-top: 8px;
+      display: flex;
+      gap: 5px;
+    }
+    .modalOverlay {
+      position: fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal {
+      background: #2c2c2c;
+      padding: 16px;
+      border-radius: 8px;
+      width: 320px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .modal h4 {
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #fff;
+    }
+    .modal label {
+      color: #fff;
+    }
+    .modal .flexColumn {
+      width: 100%;
+    }
+    .modal .flexColumn input, .modal .flexColumn select {
+      background: #444;
+      color: #fff;
+      border: 1px solid #666;
+    }
+    .btnGroup {
+      text-align: center;
+      margin-top: 10px;
+    }
+    /* تصميم Toast بنمط داكن مع خلفية شفافة وتأثير ضبابي (iOS) */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      background: var(--toast-bg-success);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      display: none;
+      z-index: 9999;
+      max-width: 80%;
+      line-height: 1.6;
+      text-align: center;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .toast.error {
+      background: var(--toast-bg-error);
+      backdrop-filter: blur(10px);
+    }
+    /* تصميم شاشة القفل لصفحة إدارة الخدمات بنمط iOS */
+    /* شاشة القفل الموحدة */
+.lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8); /* خلفية داكنة شفافة */
+  backdrop-filter: blur(15px);    /* تأثير تمويه */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.lock-container {
+  background: rgba(20, 20, 20, 0.95); /* لون داكن مع شفافية خفيفة */
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  padding: 30px;
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+  color: #fff;
+}
+.lock-container h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+.lock-container input {
+  width: 80%;              /* عرض أقل ليتوسط العنصر */
+  padding: 12px;
+  border: 1px solid #666;
+  border-radius: 8px;
+  margin: 0 auto 20px auto; /* محاذاة أفقية تلقائية */
+  font-size: 16px;
+  background: #333;
+  color: #fff;
+  text-align: center;      /* محاذاة النص داخل الحقل إلى المنتصف */
+}
+
+.lock-container button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.lock-container button:hover {
+  background: var(--primary-hover);
+}
+
+    @media (max-width: 600px) {
+      .container {
+        width: 95%;
+        margin: 10px;
+        padding: 15px;
+      }
+      h2 {
+        font-size: 22px;
+      }
+      input, select, button {
+        font-size: 14px;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- شاشة القفل لصفحة إدارة الخدمات -->
+<!-- شاشة القفل الموحدة -->
+<div id="lockOverlay" class="lock-overlay">
+  <div class="lock-container">
+    <h2>أدخل كلمة المرور للدخول</h2>
+    <input type="password" id="passwordInput" placeholder="كلمة المرور">
+    <button onclick="checkPassword()">دخول</button>
+  </div>
+</div>
+
+
+  <div class="container">
+    <header>
+      <h2>إدارة الخدمات والتصنيفات</h2>
+      <div class="desc">يمكنك إضافة التصنيفات والخدمات وتعديلها وحذفها</div>
+      <button class="secBtn" onclick="window.location.href='index.html'">العودة للطلبات</button>
+    </header>
+
+    <!-- قسم 1: إضافة التصنيفات -->
+    <div class="section" id="addCategoriesSection">
+      <div class="sectionHeader" onclick="toggleSection('addCategoriesSection')">
+        <strong>إضافة التصنيفات</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <!-- رئيسي -->
+          <div class="flexColumn">
+            <label>إضافة تصنيف رئيسي</label>
+            <input type="text" id="newMainCat" placeholder="مثال: tiktok">
+            <button class="addBtn" onclick="addMainCategory()">إضافة</button>
+          </div>
+          <hr style="border:none; border-top:1px solid var(--border-color); margin:10px 0;">
+          <!-- فرعي -->
+          <div class="flexColumn">
+            <label>التصنيف الرئيسي لإضافة فرعي</label>
+            <select id="selectMainCatForAddSub"></select>
+            <label>إضافة تصنيف فرعي</label>
+            <input type="text" id="newSubCat" placeholder="مثال: normal">
+            <button class="addBtn" onclick="addSubCat()">إضافة</button>
+          </div>
+          <hr style="border:none; border-top:1px solid var(--border-color); margin:10px 0;">
+          <!-- فرعي للفرعي -->
+          <div class="flexColumn">
+            <label>التصنيف الفرعي لإضافة باقة</label>
+            <select id="selectSubCatForAddSubSub"></select>
+            <label>إضافة تصنيف فرعي للفرعي (باقة)</label>
+            <input type="text" id="newSubSubCat" placeholder="مثال: starter">
+            <button class="addBtn" onclick="addSubSubCat()">إضافة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم 2: إدارة التصنيفات -->
+    <div class="section" id="manageCategoriesSection">
+      <div class="sectionHeader" onclick="toggleSection('manageCategoriesSection')">
+        <strong>إدارة التصنيفات</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <div class="flexColumn">
+            <label>التصنيف الرئيسي</label>
+            <select id="selectMainCat" onchange="updateSubCats()"></select>
+            <div>
+              <button class="deleteBtn" onclick="deleteMainCat()">حذف</button>
+              <button class="editBtn" onclick="renameMainCat()">تعديل</button>
+            </div>
+          </div>
+          <hr style="border:none; border-top:1px solid var(--border-color); margin:10px 0;">
+          <div class="flexColumn">
+            <label>التصنيف الفرعي</label>
+            <select id="selectSubCat" onchange="updateSubSubCats()"></select>
+            <div>
+              <button class="deleteBtn" onclick="deleteSubCat()">حذف</button>
+              <button class="editBtn" onclick="renameSubCat()">تعديل</button>
+            </div>
+          </div>
+          <hr style="border:none; border-top:1px solid var(--border-color); margin:10px 0;">
+          <div class="flexColumn">
+            <label>التصنيف الفرعي للفرعي</label>
+            <select id="selectSubSubCat"></select>
+            <div>
+              <button class="deleteBtn" onclick="deleteSubSubCat()">حذف</button>
+              <button class="editBtn" onclick="renameSubSubCat()">تعديل</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم 3: الخدمات -->
+    <div class="section" id="servicesSection">
+      <div class="sectionHeader" onclick="toggleSection('servicesSection')">
+        <strong>الخدمات</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <div class="searchBox">
+            <input type="text" id="searchServiceInput" placeholder="ابحث عن خدمة بالاسم أو الرمز..." oninput="filterServices()" />
+            <button onclick="filterServices()">بحث</button>
+          </div>
+          <div class="servicesGrid" id="servicesGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم 4: إضافة خدمة جديدة -->
+    <div class="section" id="addServiceSection">
+      <div class="sectionHeader" onclick="toggleSection('addServiceSection')">
+        <strong>إضافة خدمة جديدة</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <div class="flexColumn">
+            <label>التصنيف الرئيسي</label>
+            <select id="addMainCatSel"></select>
+            <label>التصنيف الفرعي</label>
+            <select id="addSubCatSel"></select>
+            <label>التصنيف الفرعي للفرعي (باقة)</label>
+            <select id="addSubSubCatSel"></select>
+            <label>اسم الخدمة</label>
+            <input type="text" id="addServiceName">
+            <label>رمز الخدمة (ID)</label>
+            <input type="number" id="addServiceId">
+            <label>الكمية</label>
+            <input type="number" id="addQuantity">
+            <label>المزود</label>
+            <select id="addProvider">
+              <option value="seoclevers">سيوكليفرز</option>
+              <option value="drd3m">دكتور دعم</option>
+            </select>
+            <button class="addBtn" onclick="addService()">إضافة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> <!-- نهاية .container -->
+
+  <!-- نافذة التعديل (Modal) -->
+  <div class="modalOverlay" id="modalOverlay">
+    <div class="modal" id="editModal">
+      <h4>تعديل الخدمة</h4>
+      <div class="flexColumn">
+        <label>اسم الخدمة</label>
+        <input type="text" id="editServiceName">
+        <label>رمز الخدمة</label>
+        <input type="number" id="editServiceId">
+        <label>الكمية</label>
+        <input type="number" id="editQuantity">
+        <label>المزود</label>
+        <select id="editProvider">
+          <option value="seoclevers">سيوكليفرز</option>
+          <option value="drd3m">دكتور دعم</option>
+        </select>
+      </div>
+      <div class="btnGroup">
+        <button class="editBtn" onclick="saveEditService()">حفظ</button>
+        <button class="deleteBtn" onclick="closeModal()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- عنصر Toast لعرض الرسائل -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <!-- ربط ملفات الجافا سكريبت -->
+  <script src="translate.js"></script>
+  <script src="manage_app.js"></script>
+  <script src="lock.js"></script>
+</body>
+</html>

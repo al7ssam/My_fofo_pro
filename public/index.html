@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <!-- لضمان تجاوب الصفحة مع مختلف الأجهزة -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إرسال الطلبات</title>
+  <!-- خط Tajawal -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #1a1a1a;
+      --container-bg: #242424;
+      --section-bg: #2c2c2c;
+      --border-color: #3a3a3a;
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --text-color: #eee;
+      --text-muted: #ccc;
+      /* ألوان Toast بنمط داكن مع خلفية شفافة وتأثير ضبابي */
+      --toast-bg-success: rgba(0, 0, 0, 0.6);
+      --toast-bg-error: rgba(220, 53, 69, 0.6);
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-dark);
+      font-family: 'Tajawal', sans-serif;
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 90%;
+      max-width: 600px;
+      background: var(--container-bg);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      margin-top: 40px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 30px;
+      font-size: 24px;
+      color: #fff;
+    }
+    label {
+      display: block;
+      text-align: right;
+      margin: 15px 0 5px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    select, input, button, textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-family: 'Tajawal', sans-serif;
+      background: var(--section-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    select {
+      appearance: none;
+      background: var(--section-bg)
+                  url("data:image/svg+xml;charset=UTF-8,<svg fill='%23bbb' height='24' viewBox='0 0 24 24' width='24'><path d='M7 10l5 5 5-5z'/></svg>")
+                  no-repeat right 0.8rem center/16px 16px;
+      background-position: right 0.9rem center;
+      cursor: pointer;
+    }
+    button {
+      border: none;
+      background: var(--primary-color);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: var(--primary-hover);
+    }
+    textarea {
+      resize: none;
+      margin-top: 10px;
+      height: 160px;
+      line-height: 1.5;
+      direction: ltr;
+      text-align: left;
+      white-space: pre;
+      overflow: auto;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .actions button {
+      flex: 1;
+    }
+    .manageLinkBtn {
+      background: #444;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 25px;
+      width: auto;
+      display: inline-block;
+      text-decoration: none;
+      color: #fff;
+      cursor: pointer;
+    }
+    .manageLinkBtn:hover {
+      opacity: 0.8;
+    }
+    /* تصميم Toast بنمط داكن مع خلفية شفافة وتأثير ضبابي (iOS) */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      background: var(--toast-bg-success);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      display: none;
+      z-index: 9999;
+      max-width: 80%;
+      text-align: center;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .toast.error {
+      background: var(--toast-bg-error);
+      backdrop-filter: blur(10px);
+    }
+    /* تصميم شاشة القفل بنمط iOS مع خلفية شفافة وتأثير تمويه */
+    /* شاشة القفل الموحدة */
+.lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8); /* خلفية داكنة شفافة */
+  backdrop-filter: blur(15px);    /* تأثير تمويه */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.lock-container {
+  background: rgba(20, 20, 20, 0.95); /* لون داكن مع شفافية خفيفة */
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  padding: 30px;
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+  color: #fff;
+}
+.lock-container h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+.lock-container input {
+  width: 80%;              /* عرض أقل ليتوسط العنصر */
+  padding: 12px;
+  border: 1px solid #666;
+  border-radius: 8px;
+  margin: 0 auto 20px auto; /* محاذاة أفقية تلقائية */
+  font-size: 16px;
+  background: #333;
+  color: #fff;
+  text-align: center;      /* محاذاة النص داخل الحقل إلى المنتصف */
+}
+
+.lock-container button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.lock-container button:hover {
+  background: var(--primary-hover);
+}
+
+    /* استعلامات الوسائط لتحسين التجاوب */
+    @media (max-width: 600px) {
+      .container {
+        width: 95%;
+        margin: 10px;
+        padding: 15px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      select, input, textarea, button {
+        font-size: 14px;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- شاشة القفل للصفحة الرئيسية -->
+  <!-- شاشة القفل الموحدة -->
+<div id="lockOverlay" class="lock-overlay">
+  <div class="lock-container">
+    <h2>أدخل كلمة المرور للدخول</h2>
+    <input type="password" id="passwordInput" placeholder="كلمة المرور">
+    <button onclick="checkPassword()">دخول</button>
+  </div>
+</div>
+
+  </div>
+  <!-- محتوى الصفحة الرئيسية -->
+  <div class="container">
+    <h1>تكوين الطلب</h1>
+    <!-- عناصر اختيار التصنيفات وإدخال الرابط ومربع عرض النص الناتج -->
+    <label for="mainCategory">الفئة الرئيسية</label>
+    <select id="mainCategory" onchange="updateSubCategories(); generateFormula();"></select>
+
+    <label for="subCategory" id="subCatLabel" style="display:none">الفئة الفرعية</label>
+    <select id="subCategory" style="display:none" onchange="updateSubSubCategories(); generateFormula();"></select>
+
+    <label for="subSubCategory" id="subSubCategoryLabel" style="display:none">الباقة</label>
+    <select id="subSubCategory" style="display:none" onchange="generateFormula();"></select>
+
+    <label for="contentLink">رابط المحتوى</label>
+    <input type="text" id="contentLink" placeholder="أدخل الرابط هنا" oninput="generateFormula()" />
+
+    <textarea id="result"></textarea>
+
+    <div class="actions">
+      <button onclick="copyToClipboard()">نسخ</button>
+      <button onclick="sendOrder()">إرسال</button>
+    </div>
+
+    <a href="manage_services.html" class="manageLinkBtn">إدارة الخدمات</a>
+  </div>
+  <!-- عنصر Toast لعرض الرسائل -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <!-- ربط ملفات الجافا سكريبت -->
+  <script src="translate.js"></script>
+  <script src="app.js"></script>
+  <script src="lock.js"></script>
+</body>
+</html>
