@@ -1,6 +1,5 @@
 // server.js
 const express = require('express');
-const fetch = require('node-fetch'); // تأكد من تثبيت node-fetch@2
 const bodyParser = require('body-parser');
 const path = require('path');
 
@@ -13,17 +12,24 @@ app.use(bodyParser.json());
 
 // إعداد CORS للسماح للواجهة بالوصول
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*"); // في الإنتاج يمكنك تحديد النطاق المسموح به
+  res.header("Access-Control-Allow-Origin", "*"); // في الإنتاج، يمكنك تحديد النطاق المسموح به
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // ✅ حل مشكلة CORS
   next();
 });
 
+// معالجة طلبات OPTIONS لمنع أخطاء CORS
+app.options('*', (req, res) => {
+  res.sendStatus(200);
+});
+
 // جعل المجلد العام متاحًا للوصول إليه
-app.use(express.static(path.join(__dirname, 'public')));
+const publicPath = path.join(process.cwd(), 'public');
+app.use(express.static(publicPath));
 
 // عند فتح الصفحة الرئيسية، يتم إرسال `index.html`
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // نقطة النهاية للـDrD3m Proxy
@@ -37,7 +43,7 @@ app.post('/api/drd3m', async (req, res) => {
     const json = await response.json();
     res.json(json);
   } catch (err) {
-    console.error(err);
+    console.error("Error in /api/drd3m:", err);
     res.status(500).json({ error: 'Proxy error: ' + err.message });
   }
 });
@@ -53,11 +59,12 @@ app.post('/api/seoclevers', async (req, res) => {
     const json = await response.json();
     res.json(json);
   } catch (err) {
-    console.error(err);
+    console.error("Error in /api/seoclevers:", err);
     res.status(500).json({ error: 'Proxy error: ' + err.message });
   }
 });
 
+// تشغيل الخادم
 app.listen(PORT, () => {
-  console.log(`Proxy server listening on port ${PORT}`);
+  console.log(`✅ Proxy server listening on port ${PORT}`);
 });
