@@ -39,9 +39,12 @@ app.get('/', (req, res) => {
 // نقطة النهاية للـDrD3m Proxy
 app.post('/api/drd3m', async (req, res) => {
   try {
+    const postData = new URLSearchParams(req.body);
+    postData.append('key', DRD3M_API_KEY); // إضافة مفتاح API الخاص بـ DrD3m
+
     const response = await fetch('https://drd3m.me/api/v2', {
       method: 'POST',
-      body: new URLSearchParams(req.body),
+      body: postData,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     const json = await response.json();
@@ -55,9 +58,12 @@ app.post('/api/drd3m', async (req, res) => {
 // نقطة النهاية للـSeoclevers Proxy
 app.post('/api/seoclevers', async (req, res) => {
   try {
+    const postData = new URLSearchParams(req.body);
+    postData.append('key', SEOCLEVERS_API_KEY); // إضافة مفتاح API الخاص بـ Seoclevers
+
     const response = await fetch('https://seoclevers.com/api/v2', {
       method: 'POST',
-      body: new URLSearchParams(req.body),
+      body: postData,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     const json = await response.json();
