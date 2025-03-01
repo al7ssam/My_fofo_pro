@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <!-- لضمان تجاوب الصفحة مع مختلف الأجهزة -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>إدارة الخدمات والتصنيفات</title>
   <!-- خط Tajawal -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,7 +109,10 @@
       transition: max-height 0.3s ease;
       overflow: hidden;
     }
-    .section.open .sectionContent { max-height: 2000px; }
+    .section.open .sectionContent {
+       max-height: 5000px; /* قيمة كبيرة تسمح بعرض جميع المحتويات */
+       overflow-y: auto;   /* تمكين التمرير العمودي */ 
+    }
     .section.open .sectionHeader span { transform: rotate(180deg); }
     .sectionContentInner { padding: 10px 15px; }
     .flexColumn {
@@ -159,6 +162,8 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 10px;
+      max-height: 80vh; /* تحديد ارتفاع أقصى كنسبة من ارتفاع الشاشة */
+      overflow-y: auto; /* إضافة التمرير العمودي */
     }
     .serviceCard {
       background: var(--card-bg);
@@ -312,7 +317,7 @@
         font-size: 22px;
       }
       input, select, button {
-        font-size: 14px;
+        font-size: 16px;
         padding: 10px;
       }
     }
