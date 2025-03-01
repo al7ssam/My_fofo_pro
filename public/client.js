@@ -8,6 +8,7 @@
  * - عند الضغط على "إرسال"، يتم جمع الخدمات المطابقة لاختيارات المستخدم،
  *   ومن ثم إرسال كل خدمة إلى خادم البروكسي (Proxy) الذي يتولى استخدام مفاتيح الـ API من البيئة.
  * - تعرض الدالة رسالة تفصيلية تُظهر عدد الطلبات الناجحة والفاشلة مع أسباب الفشل.
+ * - بعد الإرسال، يتم تفريغ حقل الرابط ومربع النتائج لمنع الإرسال المتكرر دون تغيير الرابط.
  *******************************************************/
 
 /**
@@ -193,16 +194,25 @@ function copyToClipboard() {
 
 /**
  * إرسال الطلب:
- * - يجمع كل الخدمات المطابقة
+ * - يجمع كل الخدمات المطابقة.
  * - لكل خدمة: يُرسل طلبًا إلى البروكسي المناسب (حسب provider) عبر الخادم الذي يقوم بإضافة مفتاح الـ API من البيئة.
- * - يعرض تقريرًا نهائيًا يوضح عدد الطلبات الناجحة والفاشلة وأسباب الفشل.
+ * - يعرض تقريرًا نهائيًا يوضح عدد الطلبات الناجحة والفاشلة مع أسباب الفشل.
  */
 async function sendOrder() {
-  const link = document.getElementById('contentLink').value.trim();
+  // تعريف حقل الرابط وزر الإرسال
+  const linkField = document.getElementById('contentLink');
+  const sendBtn = document.querySelector('button[onclick="sendOrder()"]');
+  
+  const link = linkField.value.trim();
   if (!link) {
     showToast('الرجاء إدخال الرابط.', true);
     return;
   }
+  
+  // تعطيل زر الإرسال أثناء عملية الإرسال
+  sendBtn.disabled = true;
+  sendBtn.textContent = "جارٍ الإرسال...";
+  
   const mainCategory = document.getElementById('mainCategory').value || '';
   const subCategory = document.getElementById('subCategory').value || '';
   const subSubCategory = document.getElementById('subSubCategory').value || '';
@@ -215,6 +225,8 @@ async function sendOrder() {
 
   if (matchedServices.length === 0) {
     showToast('لم يتم العثور على خدمات.', true);
+    sendBtn.disabled = false;
+    sendBtn.textContent = "إرسال";
     return;
   }
 
@@ -225,7 +237,6 @@ async function sendOrder() {
   for (let srv of matchedServices) {
     try {
       let apiResp = await sendToApi(srv, link);
-      // استخدم دالة الترجمة لتحويل الاستجابة إلى رسالة عربية
       let translatedMsg = translateResponse(apiResp);
       if (apiResp && apiResp.order) {
         successes++;
@@ -253,59 +264,17 @@ async function sendOrder() {
     const msg = `تم إرسال ${successes} من أصل ${total} بنجاح، وفشلت ${fails}.\nالأسباب:\n` + failReasons.join('\n');
     showToast(msg, true);
   }
+  
+  // التعديل الجديد: تفريغ حقل الرابط ومربع النتائج بعد الانتهاء من الإرسال
+  linkField.value = '';
+  document.getElementById('result').value = '';
 }
 
-/** إرسال خدمة لمزودها باستخدام خادم البروكسي */
-async function sendToApi(serviceObj, link) {
-  const provider = (serviceObj.provider || '').toLowerCase();
-  let proxyUrl = '';
-
-  if (provider === 'drd3m') {
-    proxyUrl = DRD3M_PROXY_URL;
-  } else if (provider === 'seoclevers') {
-    proxyUrl = SEOCLEVERS_PROXY_URL;
-  } else {
-    throw new Error('مزود خدمة غير معروف: ' + provider);
-  }
-
-  // لا يتم إرسال مفتاح الـ API من العميل؛ سيتم إضافته في الجانب الخلفي (server.js)
-  const postData = {
-    action: 'add',
-    service: serviceObj.id,
-    link: link,
-    quantity: serviceObj.quantity
-  };
-
-  const formData = new URLSearchParams();
-  for (let k in postData) {
-    formData.append(k, postData[k]);
-  }
-
-  let response = await fetch(proxyUrl, {
-    method: 'POST',
-    body: formData,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-  });
-  let jsonResp = await response.json();
-  return jsonResp;
-}
-
-/** عرض رسالة Toast متعددة الأسطر */
-function showToast(msg, isError = false) {
-  const toast = document.getElementById('toast');
-  toast.innerHTML = msg.replace(/\n/g, '<br>');
-  toast.classList.remove('error');
-  if (isError) toast.classList.add('error');
-  toast.style.display = 'block';
-  setTimeout(() => {
-    toast.style.display = 'none';
-  }, 6000);
-}
-
-/** عند تحميل الصفحة */
-window.addEventListener('DOMContentLoaded', async () => {
-  globalData = await loadData();
-  populateMainCategories();
-  updateSubCategories();
-  generateFormula();
+// إعادة تمكين زر الإرسال عند تغيير الرابط في حقل الإدخال
+document.getElementById('contentLink').addEventListener('input', function() {
+  const sendBtn = document.querySelector('button[onclick="sendOrder()"]');
+  sendBtn.disabled = false;
+  sendBtn.textContent = "إرسال";
 });
+
+/* نهاية الملف */
