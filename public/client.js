@@ -1,12 +1,12 @@
 /*******************************************************
- * app.js
+ * client.js
  * صفحة إرسال الطلبات
  * -----------------------------------------------------
  * - يقرأ البيانات من servicesData.json (أو من localStorage)
  * - يملأ قائمة mainCategory، وتقوم الدوال بتعبئة القوائم الفرعية (subCategory, subSubCategory) إن وُجدت.
  * - يولّد نصًا بصيغة: serviceID | link | quantity
  * - عند الضغط على "إرسال"، يتم جمع الخدمات المطابقة لاختيارات المستخدم،
- *   ومن ثم إرسال كل خدمة إلى مزودها عبر خادم البروكسي (Proxy)
+ *   ومن ثم إرسال كل خدمة إلى خادم البروكسي (Proxy) الذي يتولى استخدام مفاتيح الـ API من البيئة.
  * - تعرض الدالة رسالة تفصيلية تُظهر عدد الطلبات الناجحة والفاشلة مع أسباب الفشل.
  *******************************************************/
 
@@ -64,13 +64,8 @@ function translateResponse(response) {
   return JSON.stringify(response);
 }
 
-
 const STORAGE_KEY = 'services_data';
 let globalData = { categories: {}, services: [] };
-
-// ضع مفاتيح الـAPI الخاصة بك هنا:
-const DRD3M_API_KEY = '2a7fbfc1c050307e4db73cdf6954e79a';       
-const SEOCLEVERS_API_KEY = '16e86c9b803ff03e150446716afca496';
 
 // عناوين البروكسي (Proxy) التي يشغلها خادمك المحلي:
 const DRD3M_PROXY_URL = 'http://localhost:3000/api/drd3m';
@@ -200,7 +195,7 @@ function copyToClipboard() {
 /**
  * إرسال الطلب:
  * - يجمع كل الخدمات المطابقة
- * - لكل خدمة: يُرسل طلبًا إلى البروكسي المناسب (حسب provider)
+ * - لكل خدمة: يُرسل طلبًا إلى البروكسي المناسب (حسب provider) عبر الخادم الذي يقوم بإضافة مفتاح الـ API من البيئة.
  * - يعرض تقريرًا نهائيًا يوضح عدد الطلبات الناجحة والفاشلة وأسباب الفشل.
  */
 async function sendOrder() {
@@ -265,20 +260,17 @@ async function sendOrder() {
 async function sendToApi(serviceObj, link) {
   const provider = (serviceObj.provider || '').toLowerCase();
   let proxyUrl = '';
-  let apiKey = '';
 
   if (provider === 'drd3m') {
     proxyUrl = DRD3M_PROXY_URL;
-    apiKey = DRD3M_API_KEY;
   } else if (provider === 'seoclevers') {
     proxyUrl = SEOCLEVERS_PROXY_URL;
-    apiKey = SEOCLEVERS_API_KEY;
   } else {
     throw new Error('مزود خدمة غير معروف: ' + provider);
   }
 
+  // لا يتم إرسال مفتاح الـ API من العميل؛ سيتم إضافته في الجانب الخلفي (server.js)
   const postData = {
-    key: apiKey,
     action: 'add',
     service: serviceObj.id,
     link: link,

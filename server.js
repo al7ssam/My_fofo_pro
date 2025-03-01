@@ -1,10 +1,14 @@
 // server.js
 const express = require('express');
+const fetch = require('node-fetch'); // إضافة هذه السطر لاستيراد fetch
 const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const DRD3M_API_KEY = process.env.DRD3M_API_KEY;
+const SEOCLEVERS_API_KEY = process.env.SEOCLEVERS_API_KEY;
 
 // لتفسير بيانات POST (x-www-form-urlencoded)
 app.use(bodyParser.urlencoded({ extended: false }));

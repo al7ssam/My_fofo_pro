@@ -3,7 +3,7 @@
 نظرة عامة / Overview
 
 العربية:
-هذا المشروع هو نظام متكامل لإرسال الطلبات وإدارة الخدمات باستخدام واجهة أمامية حديثة وخادم وسيط (Proxy Server) للتواصل مع مزودي الخدمات الخارجيين مثل DrD3m و Seoclevers. يوفر المشروع تجربة مستخدم شاملة من خلال واجهتين رئيسيتين: صفحة إرسال الطلبات (index.html) وصفحة إدارة الخدمات (manage_services.html). كما يتضمن نظام حماية بكلمة مرور لكل صفحة، مع شاشة قفل حديثة وتصميم داكن مع تأثيرات شفافة وتمويه على غرار أنظمة iOS. بالإضافة إلى ذلك، يتم تعريب رسائل الاستجابة القادمة من الـ API لتظهر للمستخدم باللغة العربية.
+هذا المشروع هو نظام متكامل لإرسال الطلبات وإدارة الخدمات باستخدام واجهة أمامية حديثة وخادم وسيط (Proxy Server) للتواصل مع مزودي الخدمات الخارجيين مثل DrD3m و Seoclevers. يوفر المشروع تجربة مستخدم شاملة من خلال واجهتين رئيسيتين: صفحة إرسال الطلبات (index.html) وصفحة إدارة الخدمات (manage_services.html). كما يتضمن نظام حماية بكلمة مرور لكل صفحة، مع شاشة قفل حديثة وتصميم داكن بتأثيرات شفافة وتمويه مشابه لأنظمة iOS. بالإضافة إلى ذلك، يتم تعريب رسائل الاستجابة القادمة من الـ API لتظهر للمستخدم باللغة العربية.
 
 English:
 This project is a comprehensive system for sending orders and managing services via a modern front-end interface and a proxy server that communicates with external service providers such as DrD3m and Seoclevers. It provides a complete user experience through two main interfaces: the orders page (index.html) and the services management page (manage_services.html). The system includes password protection for each page with a modern lock screen featuring a dark theme with transparent and blurred effects similar to iOS. Additionally, API response messages are translated into Arabic for the end-user.
@@ -12,162 +12,186 @@ This project is a comprehensive system for sending orders and managing services 
 
 العربية:
 
-واجهة إرسال الطلبات:
+واجهة إرسال الطلبات (index.html + client.js):
 تعبئة قوائم التصنيفات الرئيسية والفرعية والباقات من بيانات مخزنة في servicesData.json أو localStorage.
 توليد صيغة الطلب تلقائيًا بصيغة: serviceID | link | quantity.
-إرسال الطلبات عبر خادم البروكسي باستخدام مفاتيح API وعناوين محددة لكل مزود (DrD3m و Seoclevers).
+إرسال الطلبات عبر خادم البروكسي باستخدام مفاتيح API المخزنة في متغيرات البيئة (Environment Variables)، وليس في الكود، مما يُحسن الأمان وسهولة التعديل.
 عرض تقرير تفصيلي بعد الإرسال يشمل عدد الطلبات الناجحة والفاشلة مع أسباب الفشل، مع تعريب رسائل الاستجابة.
-واجهة إدارة الخدمات:
-إضافة وتعديل وحذف التصنيفات والخدمات.
-إدارة بيانات الخدمات باستخدام نفس مصدر البيانات (servicesData.json والـ localStorage).
-نظام الحماية بكلمة مرور:
+واجهة إدارة الخدمات (manage_services.html + manage_app.js):
+إمكانية إضافة وتعديل وحذف التصنيفات والخدمات.
+إدارة بيانات الخدمات باستخدام نفس المصدر (servicesData.json والـ localStorage).
+نظام الحماية بكلمة مرور (lock.js + passwords.json):
 شاشة قفل تظهر عند تحميل الصفحات لمنع الوصول غير المصرح به.
 كلمات مرور منفصلة لكل صفحة يتم تخزينها في ملف passwords.json.
 دعم الضغط على مفتاح Enter في حقل الإدخال لتنفيذ التحقق.
-ترجمة رسائل الاستجابة:
-دالة (translateResponse) تقوم بتحويل رسائل الاستجابة الإنجليزية إلى نصوص عربية واضحة للمستخدم.
-خادم وسيط (Proxy Server):
-يعمل باستخدام Node.js و Express لتجاوز قيود CORS وحماية مفاتيح API.
+ترجمة رسائل الاستجابة (translateResponse):
+دالة translateResponse (في client.js) تقوم بتحويل رسائل الاستجابة الإنجليزية إلى نصوص عربية واضحة.
+خادم وسيط (Proxy Server) (server.js):
+يعمل باستخدام Node.js و Express لتجاوز قيود CORS وحماية مفاتيح الـ API.
+يعتمد على متغيرات البيئة (Environment Variables) للحصول على مفاتيح API (مثل DRD3M_API_KEY و SEOCLEVERS_API_KEY).
+يُسهل عملية تعديل المفاتيح أو نقل الاستضافة في المستقبل.
 English:
 
-Orders Page:
+Orders Page (index.html + client.js):
 Populates main, sub, and package category lists from data stored in servicesData.json or localStorage.
 Automatically generates the order formula in the format: serviceID | link | quantity.
-Sends orders via a proxy server using API keys and designated proxy URLs for each provider (DrD3m and Seoclevers).
-Displays a detailed report after order submission showing the number of successful and failed orders along with failure reasons, with translated response messages.
-Services Management Page:
+Sends orders via a proxy server using API keys stored in environment variables rather than in the code, ensuring better security and easy modification.
+Displays a detailed report after submission with the number of successful and failed orders, including translated response messages.
+Services Management Page (manage_services.html + manage_app.js):
 Allows adding, editing, and deleting of categories and services.
-Manages services data using the same data source (servicesData.json and localStorage).
-Password Protection System:
+Manages services data using the same source (servicesData.json and localStorage).
+Password Protection System (lock.js + passwords.json):
 A lock screen is displayed on page load to prevent unauthorized access.
 Separate passwords for each page are stored in passwords.json.
-Supports pressing the Enter key in the password field to submit the password.
-API Response Translation:
-A function (translateResponse) converts API response messages from English into clear Arabic texts.
-Proxy Server:
+Supports pressing the Enter key to submit the password.
+API Response Translation (translateResponse):
+The translateResponse function (in client.js) converts English API response messages into clear Arabic texts.
+Proxy Server (server.js):
 Built with Node.js and Express to handle API requests, bypass CORS restrictions, and secure API keys.
+Loads API keys from environment variables (e.g., DRD3M_API_KEY and SEOCLEVERS_API_KEY), facilitating easy updates and hosting changes.
 هيكلية الملفات / File Structure
 
 العربية:
 
-v2.2/
-├── index.html                  // صفحة إرسال الطلبات
-├── manage_services.html        // صفحة إدارة الخدمات والتصنيفات
-├── app.js                      // منطق إرسال الطلبات، توليد الصيغ، وتعريب الرسائل
-├── manage_app.js               // منطق إدارة الخدمات (إضافة، تعديل، حذف)
-├── lock.js                     // منطق شاشة القفل والتحقق من كلمة المرور (يدعم Enter)
-├── passwords.json              // كلمات المرور لكل صفحة (orderPage و manageServicesPage)
-├── servicesData.json           // بيانات التصنيفات وقائمة الخدمات
-├── server.js                   // خادم وسيط (Proxy Server) باستخدام Node.js و Express
-├── package.json                // إعدادات المشروع والتبعيات
-└── package-lock.json           // معلومات تثبيت التبعيات
+MY_FOFO/
+├── node_modules/             // مجلد التبعيات (يُنشأ عند npm install)
+├── public/
+│   ├── client.js            // منطق الواجهة الأمامية
+│   ├── index.html           // صفحة إرسال الطلبات
+│   ├── lock.js              // منطق شاشة القفل والتحقق
+│   ├── manage_app.js        // منطق إدارة الخدمات (واجهة)
+│   ├── manage_services.html // صفحة إدارة الخدمات
+│   └── (ملفات أخرى مثل styles.css أو مجلد images...)
+├── server.js                // خادم وسيط (Proxy) باستخدام Node.js وExpress
+├── passwords.json           // كلمات المرور لكل صفحة
+├── servicesData.json        // بيانات التصنيفات وقائمة الخدمات
+├── package.json             // إعدادات المشروع والتبعيات
+├── package-lock.json        // معلومات تثبيت التبعيات
+├── README.md                // الملف التوثيقي للمشروع
+└── .gitignore/.gitattributes (اختياري حسب تفضيلاتك)
 English:
 
-v2.2/
-├── index.html                  // Orders page
-├── manage_services.html        // Services management page
-├── app.js                      // Logic for order submission, formula generation, and response translation
-├── manage_app.js               // Logic for managing services (add, edit, delete)
-├── lock.js                     // Lock screen logic for password protection (supports Enter key)
-├── passwords.json              // Passwords for each page (orderPage and manageServicesPage)
-├── servicesData.json           // Categories and services data
-├── server.js                   // Proxy server using Node.js and Express
-├── package.json                // Project settings and dependencies
-└── package-lock.json           // Dependency lock file
+MY_FOFO/
+├── node_modules/             // Dependencies folder (created by npm install)
+├── public/
+│   ├── client.js            // Front-end logic
+│   ├── index.html           // Orders page
+│   ├── lock.js              // Lock screen logic
+│   ├── manage_app.js        // Services management logic (front-end)
+│   ├── manage_services.html // Services management page
+│   └── (Other files like styles.css or images folder...)
+├── server.js                // Proxy server with Node.js & Express
+├── passwords.json           // Passwords for each page
+├── servicesData.json        // Categories and services data
+├── package.json             // Project settings and dependencies
+├── package-lock.json        // Dependency lock file
+├── README.md                // Project documentation
+└── .gitignore/.gitattributes (optional, depending on your preferences)
 كيفية التثبيت / Installation
 
 العربية:
 
 استنسخ المشروع إلى جهازك:
 git clone <repository-url>
-cd v2.2
+cd MY_FOFO
 قم بتثبيت التبعيات:
 npm install
-اضبط مفاتيح API في ملف app.js (DRD3M_API_KEY و SEOCLEVERS_API_KEY) وفقًا لإعداداتك.
-قم بتعديل ملف passwords.json لتحديد كلمات المرور لكل صفحة كما ترغب.
+ضبط مفاتيح الـ API في متغيرات البيئة:
+في ملف server.js، يتم قراءة مفاتيح API من process.env.DRD3M_API_KEY و process.env.SEOCLEVERS_API_KEY.
+تأكد من تعيين هذه المتغيرات في منصة الاستضافة (مثل Render) بدلاً من وضعها في الكود.
+تعديل ملف passwords.json لتحديد كلمات المرور:
+orderPage لصفحة الطلبات.
+manageServicesPage لصفحة إدارة الخدمات.
 English:
 
 Clone the repository to your local machine:
 git clone <repository-url>
-cd v2.2
+cd MY_FOFO
 Install dependencies:
 npm install
-Configure the API keys in app.js (DRD3M_API_KEY and SEOCLEVERS_API_KEY) as needed.
-Modify passwords.json to set the desired passwords for each page.
+Configure the API keys in environment variables:
+In server.js, API keys are read from process.env.DRD3M_API_KEY and process.env.SEOCLEVERS_API_KEY.
+Ensure these variables are set in your hosting platform (e.g., Render) rather than hardcoding them in the code.
+Modify passwords.json to set passwords:
+orderPage for the orders page.
+manageServicesPage for the services management page.
 كيفية الاستخدام / Usage
 
 العربية:
 
 تشغيل المشروع محليًا:
-شغّل الخادم باستخدام:
 npm start
-أو
+أو:
 node server.js
 الوصول إلى الواجهات:
-افتح index.html لإرسال الطلبات.
-افتح manage_services.html لإدارة الخدمات والتصنيفات.
+افتح public/index.html لإرسال الطلبات.
+افتح public/manage_services.html لإدارة الخدمات والتصنيفات.
 استخدام شاشة القفل:
-عند تحميل الصفحة، ستظهر شاشة القفل.
-أدخل كلمة المرور المناسبة:
-لصفحة الطلبات: الكلمة الموجودة في مفتاح orderPage بملف passwords.json.
-لصفحة إدارة الخدمات: الكلمة الموجودة في مفتاح manageServicesPage.
+ستظهر شاشة القفل عند تحميل الصفحة.
+أدخل كلمة المرور المناسبة (موجودة في passwords.json).
 يمكنك الضغط على مفتاح Enter في حقل الإدخال لتنفيذ التحقق.
 إرسال الطلبات:
-اختر التصنيف المطلوب وأدخل الرابط.
-اضغط على زر "إرسال" لتوليد الطلبات وإرسالها عبر البروكسي.
-ستظهر نافذة Toast تعرض تقريرًا مفصلاً لحالة الطلبات مع رسائل الاستجابة المترجمة إلى العربية.
+اختر التصنيف وأدخل الرابط.
+اضغط "إرسال" لإرسال الطلبات عبر الخادم الوسيط.
+ستظهر نافذة Toast توضح عدد الطلبات الناجحة والفاشلة مع تعريب رسائل الاستجابة.
 إدارة الخدمات:
-استخدم صفحة manage_services.html لإضافة، تعديل، وحذف التصنيفات والخدمات.
-تُستخدم بيانات servicesData.json والـ localStorage لتعبئة وتحديث القوائم.
+استخدم public/manage_services.html لإضافة وتعديل وحذف التصنيفات والخدمات.
+يتم تخزين البيانات في servicesData.json والـ localStorage.
 English:
 
 Running the Project Locally:
-Start the server using:
 npm start
-or
+or:
 node server.js
 Accessing the Interfaces:
-Open index.html for order submission.
-Open manage_services.html for managing services and categories.
+Open public/index.html for order submission.
+Open public/manage_services.html for managing services and categories.
 Using the Lock Screen:
-On page load, the lock screen appears.
-Enter the appropriate password:
-For the orders page: use the password under the key orderPage in passwords.json.
-For the services management page: use the password under the key manageServicesPage.
-Press the Enter key in the password field to submit the password.
+The lock screen appears on page load.
+Enter the appropriate password (found in passwords.json).
+You can press Enter to submit the password.
 Submitting Orders:
-Select the desired category and enter the content link.
-Click the "Send" button to generate and submit orders via the proxy.
-A Toast window will display a detailed report of the order status with translated response messages.
+Select the category and enter the content link.
+Click "Send" to send orders via the proxy server.
+A Toast window will display a detailed report of successful and failed orders with translated messages.
 Managing Services:
-Use manage_services.html to add, edit, and delete categories and services.
-Data from servicesData.json and localStorage is used to populate and update the lists.
+Use public/manage_services.html to add, edit, and delete categories and services.
+Data is stored in servicesData.json and localStorage.
 التطوير والصيانة / Development & Maintenance
 
 العربية:
 
 تحديث البيانات:
-يمكن تحديث بيانات التصنيفات والخدمات عبر تعديل ملف servicesData.json؛ ستقوم الواجهات بتحميل البيانات وتخزينها في localStorage تلقائيًا.
+يمكنك تحديث التصنيفات والخدمات عبر تعديل servicesData.json. الواجهات ستقوم بتحميل البيانات وتخزينها في localStorage تلقائيًا.
 تعريب الرسائل:
-تُترجم رسائل الاستجابة في دالة translateResponse داخل app.js؛ يمكن تعديل قاموس الترجمة لتغطية أخطاء أو حالات جديدة.
+تُترجم رسائل الاستجابة في دالة translateResponse الموجودة في client.js. يمكنك تعديل القاموس لإضافة أخطاء أو حالات جديدة.
 حماية النظام:
-يتم التحكم في كلمات المرور من خلال ملف passwords.json؛ يُنصح بحماية هذا الملف وعدم نشره علنًا.
+كلمات المرور موجودة في passwords.json. يُنصح بعدم رفع هذا الملف علنًا أو نشره بشكل مكشوف.
+متغيرات البيئة (Environment Variables):
+تم نقل مفاتيح الـ API إلى متغيرات البيئة في server.js (مثل process.env.DRD3M_API_KEY و process.env.SEOCLEVERS_API_KEY).
+هذا يُسهل تغيير المفاتيح عند نقل المشروع إلى استضافة أخرى دون تعديل الكود العميل.
 اختبار شامل:
-إجراء اختبارات كاملة على بيئة محلية أو staging للتأكد من عمل جميع الوظائف قبل نشر المشروع.
+يفضل إجراء اختبارات شاملة على بيئة محلية أو بيئة مؤقتة (staging) قبل النشر النهائي.
 English:
 
 Updating Data:
-You can update category and service data by modifying servicesData.json; the interfaces will load and store the data in localStorage automatically.
+You can modify servicesData.json to update categories and services. The front-end will automatically load and store the data in localStorage.
 Translating Responses:
-API response messages are translated using the translateResponse function in app.js; you can update the translation dictionary to cover additional errors or cases.
-Securing the System:
-Passwords are managed through passwords.json; it is recommended to secure this file and avoid public exposure.
+Response messages are translated in the translateResponse function within client.js. Update the dictionary as needed for new error cases or statuses.
+System Security:
+Passwords are stored in passwords.json. Avoid exposing this file publicly.
+Environment Variables:
+API keys are stored in environment variables (process.env.DRD3M_API_KEY and process.env.SEOCLEVERS_API_KEY) in server.js.
+This makes it easier to change or rotate keys when migrating to a different hosting service, without modifying front-end code.
 Comprehensive Testing:
-Perform thorough testing on a local or staging environment to ensure all functionalities work before deployment.
+It is recommended to run thorough tests on a local or staging environment before final deployment.
 خاتمة / Conclusion
 
 العربية:
-مشروع V2.2 هو نظام متكامل لإدارة الطلبات والخدمات بواجهتين متناسقتين، نظام حماية بكلمة مرور، وتعريب رسائل الاستجابة لضمان تجربة مستخدم مميزة. كما يوفر المشروع آلية اتصال آمنة مع مزودي الخدمات عبر خادم وسيط ويستخدم تقنيات حديثة لضمان أداء عالي وتصميم جذاب. المشروع جاهز للنشر على الاستضافة بعد اختبار نهائي شامل.
+مشروع V2.2 هو نظام متكامل لإدارة الطلبات والخدمات بواجهتين متناسقتين، ونظام حماية بكلمة مرور، وتعريب رسائل الاستجابة. كما يوفر المشروع آلية اتصال آمنة مع مزودي الخدمات عبر خادم وسيط ويستخدم تقنيات حديثة لضمان أداء عالٍ وتصميم جذاب.
+تم تعزيز أمان المشروع بنقل مفاتيح الـ API إلى متغيرات البيئة، مما يسهل تعديلها عند نقل الاستضافة إلى منصة أخرى. بعد الاختبارات النهائية، يمكن نشر المشروع بثقة.
 
 English:
-V2.2 is a comprehensive system for managing orders and services with two cohesive interfaces, a password protection system, and API response translation to ensure an exceptional user experience. The project also provides a secure connection mechanism with service providers via a proxy server and utilizes modern technologies for high performance and an attractive design. The project is ready for deployment after thorough final testing.
+V2.2 is a comprehensive system for managing orders and services with two cohesive interfaces, a password protection system, and API response translation to ensure an exceptional user experience. The project also provides a secure connection mechanism with service providers via a proxy server and utilizes modern technologies for high performance and an attractive design.
+Security has been enhanced by moving API keys to environment variables, making them easier to update when switching hosting platforms. After final testing, the project is ready for deployment.
+
