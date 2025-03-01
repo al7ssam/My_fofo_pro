@@ -199,9 +199,9 @@ function copyToClipboard() {
  * - يعرض تقريرًا نهائيًا يوضح عدد الطلبات الناجحة والفاشلة مع أسباب الفشل.
  */
 async function sendOrder() {
-  // تعريف حقل الرابط وزر الإرسال
+  // تعريف حقل الرابط وزر الإرسال باستخدام معرّف الزر (sendBtn)
   const linkField = document.getElementById('contentLink');
-  const sendBtn = document.querySelector('button[onclick="sendOrder()"]');
+  const sendBtn = document.getElementById('sendBtn');
   
   const link = linkField.value.trim();
   if (!link) {
@@ -265,16 +265,24 @@ async function sendOrder() {
     showToast(msg, true);
   }
   
-  // التعديل الجديد: تفريغ حقل الرابط ومربع النتائج بعد الانتهاء من الإرسال
+  // التعديل الجديد: تفريغ حقل الرابط ومربع النتائج بعد انتهاء عملية الإرسال
   linkField.value = '';
   document.getElementById('result').value = '';
 }
 
-// إعادة تمكين زر الإرسال عند تغيير الرابط في حقل الإدخال
-document.getElementById('contentLink').addEventListener('input', function() {
-  const sendBtn = document.querySelector('button[onclick="sendOrder()"]');
-  sendBtn.disabled = false;
-  sendBtn.textContent = "إرسال";
+// إضافة مستمع الحدث لإعادة تمكين زر الإرسال عند تغيير الرابط
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('contentLink').addEventListener('input', function() {
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = false;
+    sendBtn.textContent = "إرسال";
+  });
+  
+  // عند تحميل الصفحة، تحميل البيانات وتعبئة القوائم
+  (async () => {
+    globalData = await loadData();
+    populateMainCategories();
+    updateSubCategories();
+    generateFormula();
+  })();
 });
-
-/* نهاية الملف */
