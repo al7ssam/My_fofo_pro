@@ -185,6 +185,19 @@ API keys are stored in environment variables (process.env.DRD3M_API_KEY and proc
 This makes it easier to change or rotate keys when migrating to a different hosting service, without modifying front-end code.
 Comprehensive Testing:
 It is recommended to run thorough tests on a local or staging environment before final deployment.
+
+ملاحظة حول منع حالة السبات (Self-Ping):
+
+تمت إضافة كود self-ping في ملف server.js لإرسال طلب GET دوري (مرة كل 15 دقيقة) إلى الدومين الخاص بالموقع (https://my-fofo-pro.onrender.com/).
+هذا الإجراء يهدف إلى الحفاظ على نشاط التطبيق ومنعه من الدخول في حالة السبات على استضافة Render.
+الكود يعمل بشكل منفصل عن منطق الـ API ولا يؤثر على وظائف التطبيق الأساسية، كما أنه يستهلك موارد منخفضة جدًا.
+Note on Preventing Sleep Mode (Self-Ping):
+
+A self-ping code was added in server.js to send a periodic GET request (every 15 minutes) to the site's domain (https://my-fofo-pro.onrender.com/).
+This measure is intended to keep the application active and prevent it from entering sleep mode on Render hosting.
+The code operates independently of the API logic and does not affect the core functionality of the application, while consuming minimal resources.
+
+
 خاتمة / Conclusion
 
 العربية:

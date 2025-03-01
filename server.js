@@ -72,3 +72,19 @@ app.post('/api/seoclevers', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Proxy server listening on port ${PORT}`);
 });
+
+// self-ping لمنع السبات
+function selfPing() {
+  const url = 'https://my-fofo-pro.onrender.com/';
+  require('node-fetch')(url)
+    .then(response => {
+      if (response.ok) {
+        console.log('Self ping successful');
+      } else {
+        console.error('Self ping failed with status', response.status);
+      }
+    })
+    .catch(err => console.error('Self ping error:', err));
+}
+
+setInterval(selfPing, 15 * 60 * 1000);
