@@ -67,9 +67,8 @@ function translateResponse(response) {
 const STORAGE_KEY = 'services_data';
 let globalData = { categories: {}, services: [] };
 
-// عناوين البروكسي (Proxy) التي يشغلها خادمك المحلي:
-const DRD3M_PROXY_URL = 'http://localhost:3000/api/drd3m';
-const SEOCLEVERS_PROXY_URL = 'http://localhost:3000/api/seoclevers';
+const DRD3M_PROXY_URL = '/api/drd3m';
+const SEOCLEVERS_PROXY_URL = '/api/seoclevers';
 
 /** تحميل البيانات من localStorage أو ملف JSON */
 async function loadData() {
