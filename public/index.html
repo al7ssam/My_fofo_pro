@@ -225,7 +225,13 @@
 <body>
   <!-- شاشة القفل للصفحة الرئيسية -->
   <!-- شاشة القفل الموحدة -->
-
+<div id="lockOverlay" class="lock-overlay">
+  <div class="lock-container">
+    <h2>أدخل كلمة المرور للدخول</h2>
+    <input type="password" id="passwordInput" placeholder="كلمة المرور">
+    <button onclick="checkPassword()">دخول</button>
+  </div>
+</div>
 
   </div>
   <!-- محتوى الصفحة الرئيسية -->

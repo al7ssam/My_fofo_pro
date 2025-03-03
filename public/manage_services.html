@@ -114,8 +114,8 @@
       overflow: hidden;
     }
     .section.open .sectionContent {
-       max-height: 5000px;
-       overflow-y: auto;
+       max-height: 5000px; /* قيمة كبيرة تسمح بعرض جميع المحتويات */
+       overflow-y: auto;   /* تمكين التمرير العمودي */ 
     }
     .section.open .sectionHeader span { transform: rotate(180deg); }
     .sectionContentInner { padding: 10px 15px; }
@@ -166,8 +166,8 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 10px;
-      max-height: 80vh;
-      overflow-y: auto;
+      max-height: 80vh; /* تحديد ارتفاع أقصى كنسبة من ارتفاع الشاشة */
+      overflow-y: auto; /* إضافة التمرير العمودي */
     }
     .serviceCard {
       background: var(--card-bg);
@@ -231,6 +231,7 @@
       text-align: center;
       margin-top: 10px;
     }
+    /* تصميم Toast بنمط داكن مع خلفية شفافة وتأثير ضبابي (iOS) */
     .toast {
       position: fixed;
       left: 50%;
@@ -254,6 +255,7 @@
       background: var(--toast-bg-error);
       backdrop-filter: blur(10px);
     }
+    /* تصميم صندوق المعلومات للخدمة المختارة */
     .infoBox {
       background: rgba(60, 60, 60, 0.6);
       border: 1px solid var(--border-color);
@@ -271,58 +273,62 @@
       color: #fff;
       font-weight: 600;
     }
-    .lock-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(15px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-    .lock-container {
-      background: rgba(20, 20, 20, 0.95);
-      border: 1px solid #444;
-      border-radius: 12px;
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-      padding: 30px;
-      text-align: center;
-      max-width: 350px;
-      width: 90%;
-      color: #fff;
-    }
-    .lock-container h2 {
-      font-size: 22px;
-      margin-bottom: 20px;
-    }
-    .lock-container input {
-      width: 80%;
-      padding: 12px;
-      border: 1px solid #666;
-      border-radius: 8px;
-      margin: 0 auto 20px auto;
-      font-size: 16px;
-      background: #333;
-      color: #fff;
-      text-align: center;
-    }
-    .lock-container button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      background: var(--primary-color);
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .lock-container button:hover {
-      background: var(--primary-hover);
-    }
+    /* تصميم شاشة القفل لصفحة إدارة الخدمات بنمط iOS */
+    /* شاشة القفل الموحدة */
+.lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8); /* خلفية داكنة شفافة */
+  backdrop-filter: blur(15px);    /* تأثير تمويه */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.lock-container {
+  background: rgba(20, 20, 20, 0.95); /* لون داكن مع شفافية خفيفة */
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  padding: 30px;
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+  color: #fff;
+}
+.lock-container h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+.lock-container input {
+  width: 80%;              /* عرض أقل ليتوسط العنصر */
+  padding: 12px;
+  border: 1px solid #666;
+  border-radius: 8px;
+  margin: 0 auto 20px auto; /* محاذاة أفقية تلقائية */
+  font-size: 16px;
+  background: #333;
+  color: #fff;
+  text-align: center;      /* محاذاة النص داخل الحقل إلى المنتصف */
+}
+
+.lock-container button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.lock-container button:hover {
+  background: var(--primary-hover);
+}
+
     @media (max-width: 600px) {
       .container {
         width: 90%;
@@ -338,12 +344,15 @@
         padding: 10px;
       }
     }
+    
+    /* أنماط قسم الأرصدة */
     .balanceContainer {
       display: flex;
       flex-wrap: wrap;
       gap: 20px;
       padding: 15px;
     }
+    
     .balanceCard {
       flex: 1;
       min-width: 250px;
@@ -353,6 +362,7 @@
       padding: 15px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
+    
     .balanceTitle {
       font-size: 18px;
       font-weight: bold;
@@ -361,12 +371,14 @@
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 8px;
     }
+    
     .balanceAmount {
       font-size: 24px;
       font-weight: bold;
       color: var(--primary-color);
       margin: 15px 0;
     }
+    
     .balanceInfo {
       display: flex;
       justify-content: space-between;
@@ -374,6 +386,7 @@
       color: var(--secondary-color);
       font-size: 14px;
     }
+    
     .balanceRefreshBtn {
       background-color: var(--primary-color);
       color: white;
@@ -384,16 +397,24 @@
       font-size: 14px;
       transition: background-color 0.2s;
     }
+    
     .balanceRefreshBtn:hover {
       background-color: var(--primary-hover);
     }
+    
     .balanceSection {
       margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-
+  <div id="lockOverlay" class="lock-overlay">
+    <div class="lock-container">
+      <h2>أدخل كلمة المرور للدخول</h2>
+      <input type="password" id="passwordInput" placeholder="كلمة المرور">
+      <button onclick="checkPassword()">دخول</button>
+    </div>
+  </div>
 
   <div class="container">
     <header>

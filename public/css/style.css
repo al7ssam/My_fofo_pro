@@ -1,4 +1,8 @@
-/* ملف CSS المشترك - style.css */
+/* 
+   ملف CSS المشترك - style.css
+   يحتوي على الأنماط المشتركة بين جميع صفحات التطبيق
+*/
+
 :root {
   --bg-dark: #1a1a1a;
   --container-bg: #242424;
@@ -41,6 +45,7 @@ body {
   padding: 20px;
 }
 
+/* تصميم النموذج العام */
 label {
   display: block;
   text-align: right;
@@ -91,6 +96,7 @@ h1, h2, h3 {
   margin-top: 0;
 }
 
+/* تصميم Toast */
 .toast {
   position: fixed;
   left: 50%;
@@ -116,6 +122,7 @@ h1, h2, h3 {
   backdrop-filter: blur(10px);
 }
 
+/* شاشة القفل */
 .lock-overlay {
   position: fixed;
   top: 0;
@@ -152,7 +159,7 @@ h1, h2, h3 {
   padding: 12px;
   border: 1px solid #666;
   border-radius: 8px;
-  margin: 0 auto 20px;
+  margin: 0 auto 20px auto;
   font-size: 16px;
   background: #333;
   color: #fff;
@@ -174,6 +181,7 @@ h1, h2, h3 {
   background: var(--primary-hover);
 }
 
+/* استعلامات الوسائط لتحسين التجاوب */
 @media (max-width: 600px) {
   .container {
     width: 90%;
@@ -190,4 +198,4 @@ h1, h2, h3 {
     font-size: 16px;
     padding: 10px;
   }
-}
+} 
