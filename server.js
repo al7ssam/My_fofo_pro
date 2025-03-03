@@ -171,6 +171,31 @@ app.get('/servicesData.json', (req, res) => {
   }
 });
 
+// نقطة نهاية لحفظ بيانات الخدمات
+app.post('/api/save-services', (req, res) => {
+  try {
+    const data = req.body;
+    
+    // التحقق من صحة البيانات
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({ success: false, error: 'Invalid data format' });
+    }
+    
+    // حفظ البيانات في ملف JSON
+    fs.writeFileSync(
+      path.join(publicPath, 'servicesData.json'),
+      JSON.stringify(data, null, 2),
+      'utf8'
+    );
+    
+    console.log('تم حفظ بيانات الخدمات بنجاح');
+    res.json({ success: true, message: 'تم حفظ البيانات بنجاح' });
+  } catch (err) {
+    console.error('Error saving servicesData.json:', err);
+    res.status(500).json({ success: false, error: 'Server error while saving data' });
+  }
+});
+
 // نقطة النهاية للـ DrD3m Proxy
 app.post('/api/drd3m', async (req, res) => {
   try {

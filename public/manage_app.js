@@ -910,9 +910,31 @@ function populateMainCatSelects() {
 /** تهيئة الصفحة بالكامل */
 async function init() {
   try {
-    globalData = await loadData();
+    // تحميل البيانات من الخادم أولاً
+    try {
+      const response = await fetch('/servicesData.json');
+      if (response.ok) {
+        const serverData = await response.json();
+        if (serverData && serverData.categories && Array.isArray(serverData.services)) {
+          console.log('تم تحميل البيانات من الخادم بنجاح');
+          globalData = serverData;
+          // حفظ في التخزين المحلي كنسخة احتياطية
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(globalData));
+        } else {
+          throw new Error('بيانات الخادم غير صالحة');
+        }
+      } else {
+        throw new Error(`فشل تحميل البيانات من الخادم: ${response.status}`);
+      }
+    } catch (serverError) {
+      console.warn('لم يتم تحميل البيانات من الخادم، سيتم محاولة استخدام التخزين المحلي', serverError);
+      // استخدام التخزين المحلي كبديل
+      globalData = await loadData();
+    }
+    
     if (!globalData || !globalData.categories || !globalData.rawServices)
       throw new Error('البيانات المحملة غير مكتملة أو غير صحيحة');
+    
     if (!globalData.serviceLinks) {
       globalData.serviceLinks = [];
       console.warn('لم يتم العثور على serviceLinks، سيتم إنشاء مصفوفة فارغة');
