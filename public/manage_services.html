@@ -393,13 +393,7 @@
   </style>
 </head>
 <body>
-  <div id="lockOverlay" class="lock-overlay">
-    <div class="lock-container">
-      <h2>أدخل كلمة المرور للدخول</h2>
-      <input type="password" id="passwordInput" placeholder="كلمة المرور">
-      <button id="loginBtn">دخول</button>
-    </div>
-  </div>
+
 
   <div class="container">
     <header>
@@ -539,8 +533,8 @@
         <div class="sectionContentInner">
           <div class="searchBox">
             <label style="font-weight: bold; margin-bottom: 5px; display: block;">ابحث عن خدمة خام:</label>
-            <input type="text" id="searchRawServiceInput" placeholder="ابحث عن خدمة خام بالاسم أو الرمز..." oninput="filteredRawServices()" />
-            <button onclick="filteredRawServices()">بحث</button>
+            <input type="text" id="searchRawServiceInput" placeholder="ابحث عن خدمة خام بالاسم أو الرمز..." oninput="filterRawServices()" />
+            <button onclick="filterRawServices()">بحث</button>
           </div>
           <div class="servicesGrid" id="rawServicesGrid"></div>
         </div>

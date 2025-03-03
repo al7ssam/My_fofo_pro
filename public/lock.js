@@ -5,94 +5,85 @@
  * يتحكم هذا الملف في شاشة القفل التي تظهر عند تحميل الصفحة.
  */
 
+// Global variable to store passwords / متغير عام لتخزين كلمات المرور
+let passwords = {};
+
 /**
- * تحديد نوع الصفحة الحالية
- * Determines the current page type based on URL
+ * fetchPasswords
+ * 
+ * Fetches the passwords from the config/passwords.json file.
+ * يقوم بتحميل كلمات المرور من الملف الموجود في المجلد config.
  */
-function getCurrentPageKey() {
-  // استخدام URL الحالية لتحديد نوع الصفحة
-  const currentPath = window.location.pathname;
-  
-  // إذا كان اسم الملف هو index.html أو /
-  if (currentPath.includes('index.html') || currentPath === '/' || currentPath.endsWith('/')) {
-    console.log('صفحة الطلبات');
-    return 'orderPage';
-  } else {
-    // افتراض أن أي صفحة أخرى (مثل manage_services.html) هي صفحة الإدارة
-    console.log('صفحة الإدارة');
-    return 'manageServicesPage';
+async function fetchPasswords() {
+  try {
+    // تعديل المسار لتحميل الملف من المجلد config
+    const response = await fetch('./config/passwords.json');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    passwords = await response.json();
+    console.log('Passwords loaded successfully / تم تحميل كلمات المرور بنجاح');
+  } catch (error) {
+    console.error('Failed to load passwords.json / فشل تحميل ملف passwords.json:', error);
+    passwords = {};
   }
 }
 
 /**
  * checkPassword
  * 
- * Sends a POST request to /api/check-password with pageKey and password
- * يرسل طلب POST إلى /api/check-password للتحقق من كلمة المرور على الخادم
+ * Checks if the input password matches the password set for the given page key.
+ * تتحقق مما إذا كانت كلمة المرور المدخلة تتطابق مع كلمة المرور المحددة للصفحة.
+ * 
+ * @param {string} inputVal - The input password / كلمة المرور المدخلة.
+ * @param {string} pageKey - The page key (e.g., "manageServicesPage") / مفتاح الصفحة.
+ * @returns {boolean} - true if matched, false otherwise / true إذا كانت متطابقة، false خلاف ذلك.
  */
-async function checkPassword(inputVal, pageKey) {
-  try {
-    const response = await fetch('/api/check-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ pageKey, password: inputVal })
-    });
-    if (!response.ok) {
-      throw new Error('Invalid password or server error');
-    }
-    const data = await response.json();
-    if (data.success) {
-      return true;
-    } else {
-      return false;
-    }
-  } catch (error) {
-    console.error('Error checking password:', error);
+function checkPassword(inputVal, pageKey) {
+  if (!passwords[pageKey]) {
+    console.error(`No password defined for page key: ${pageKey} / لا يوجد مفتاح لكلمة المرور للصفحة: ${pageKey}`);
     return false;
   }
+  return inputVal === passwords[pageKey];
 }
 
 /**
- * تهيئة شاشة القفل عند تحميل الصفحة
- * Initialize the lock screen on page load
+ * Initialize the lock screen on page load.
+ * تهيئة شاشة القفل عند تحميل الصفحة.
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await fetchPasswords();
+
   const lockOverlay = document.getElementById('lockOverlay');
   const passwordInput = document.getElementById('passwordInput');
   const loginBtn = document.getElementById('loginBtn'); // تأكد من وجود زر للدخول في HTML
-  
-  // تحديد نوع الصفحة الحالية
-  const currentPageKey = getCurrentPageKey();
-  console.log('نوع الصفحة الحالية:', currentPageKey);
 
   // Support pressing Enter in the input field
   // دعم الضغط على مفتاح Enter في حقل الإدخال
   if (passwordInput) {
-    passwordInput.addEventListener('keypress', async function (event) {
+    passwordInput.addEventListener('keypress', function (event) {
       if (event.key === 'Enter') {
         event.preventDefault();
         const passVal = passwordInput.value.trim();
-        const isValid = await checkPassword(passVal, currentPageKey);
-        if (isValid) {
+        // استخدم مفتاح الصفحة المناسب؛ هنا نفترض "manageServicesPage"
+        if (checkPassword(passVal, 'manageServicesPage')) {
           lockOverlay.style.display = 'none';
         } else {
-          alert('كلمة المرور غير صحيحة / Incorrect password');
+          alert('Incorrect password / كلمة المرور غير صحيحة');
         }
       }
     });
   }
 
+  // When the login button is clicked
   // عند الضغط على زر الدخول
   if (loginBtn) {
-    loginBtn.addEventListener('click', async () => {
+    loginBtn.addEventListener('click', () => {
       const passVal = passwordInput.value.trim();
-      const isValid = await checkPassword(passVal, currentPageKey);
-      if (isValid) {
+      if (checkPassword(passVal, 'manageServicesPage')) {
         lockOverlay.style.display = 'none';
       } else {
-        alert('كلمة المرور غير صحيحة / Incorrect password');
+        alert('Incorrect password / كلمة المرور غير صحيحة');
       }
     });
   }

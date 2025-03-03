@@ -8,7 +8,7 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// مفاتيح API (DrD3m و Seoclevers) من متغيرات البيئة
+// متغيرات البيئة (Environment Variables)
 const DRD3M_API_KEY = process.env.DRD3M_API_KEY;
 const SEOCLEVERS_API_KEY = process.env.SEOCLEVERS_API_KEY;
 
@@ -36,130 +36,27 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// ★★★ نقطة نهاية للتحقق من كلمة المرور (آمن) ★★★
+// حذف نقطة النهاية التي تعرض passwords.json
+// app.get('/passwords.json', ... ); // تم إزالتها لأسباب أمنية
 
-// متغير عام لتخزين كلمات المرور في ذاكرة الخادم
-// تحميلها مرة واحدة عند بدء الخادم بدلاً من قراءتها مع كل طلب
-let passwordConfig = {};
-
-// دالة لتحميل ملف كلمات المرور
-function loadPasswordConfig() {
-  try {
-    const configPath = path.join(process.cwd(), 'config', 'passwords.json');
-    
-    // التحقق من وجود الملف
-    if (!fs.existsSync(configPath)) {
-      console.error('خطأ: ملف كلمات المرور غير موجود');
-      // إنشاء ملف افتراضي لكلمات المرور
-      const defaultConfig = {
-        "manageServicesPage": "0",
-        "orderPage": "1"
-      };
-      
-      // التأكد من وجود مجلد config
-      if (!fs.existsSync(path.join(process.cwd(), 'config'))) {
-        fs.mkdirSync(path.join(process.cwd(), 'config'), { recursive: true });
-      }
-      
-      // كتابة الملف الافتراضي
-      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
-      console.log('تم إنشاء ملف كلمات المرور الافتراضي');
-      passwordConfig = defaultConfig;
-      return;
-    }
-    
-    // قراءة الملف
-    const data = fs.readFileSync(configPath, 'utf8');
-    
-    // محاولة تحليل JSON
-    try {
-      passwordConfig = JSON.parse(data);
-      console.log('تم تحميل ملف كلمات المرور بنجاح');
-    } catch (parseError) {
-      console.error('خطأ في تنسيق ملف كلمات المرور. استخدام القيم الافتراضية');
-      passwordConfig = {
-        "manageServicesPage": "0",
-        "orderPage": "1"
-      };
-    }
-  } catch (error) {
-    console.error('خطأ أثناء تحميل كلمات المرور:', error.message);
-    passwordConfig = {
-      "manageServicesPage": "0",
-      "orderPage": "1"
-    };
-  }
-}
-
-// تحميل كلمات المرور عند بدء الخادم
-loadPasswordConfig();
-
-// للتتبع ومنع هجمات تخمين كلمات المرور
-const loginAttempts = {};
-const MAX_ATTEMPTS = 5;
-const BLOCK_TIME = 15 * 60 * 1000; // 15 دقيقة بالملي ثانية
-
-// إعادة تعيين عداد محاولات تسجيل الدخول كل 15 دقيقة
-setInterval(() => {
-  const now = Date.now();
-  for (const ip in loginAttempts) {
-    if (now - loginAttempts[ip].timestamp > BLOCK_TIME) {
-      delete loginAttempts[ip];
-    }
-  }
-}, BLOCK_TIME);
-
-// نقطة نهاية للتحقق من كلمة المرور
+// إضافة نقطة نهاية للتحقق من كلمة المرور بشكل آمن
 app.post('/api/check-password', (req, res) => {
   const { pageKey, password } = req.body;
-  const ip = req.ip || req.connection.remoteAddress;
-  
-  // التحقق من صحة المدخلات
-  if (!pageKey || !password || typeof pageKey !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ success: false, error: 'Invalid input format' });
-  }
-  
-  // فحص عدد محاولات تسجيل الدخول
-  if (loginAttempts[ip] && loginAttempts[ip].count >= MAX_ATTEMPTS) {
-    const timeLeft = Math.ceil((BLOCK_TIME - (Date.now() - loginAttempts[ip].timestamp)) / 60000);
-    return res.status(429).json({ 
-      success: false, 
-      error: `Too many attempts. Please try again later (${timeLeft} minutes remaining).` 
-    });
-  }
-  
   try {
-    // التحقق من كلمة المرور
-    if (passwordConfig[pageKey] && passwordConfig[pageKey] === password) {
-      // إعادة تعيين عداد المحاولات عند نجاح تسجيل الدخول
-      if (loginAttempts[ip]) {
-        delete loginAttempts[ip];
-      }
-      return res.json({ success: true });
+    const data = fs.readFileSync(path.join(process.cwd(), 'config', 'passwords.json'), 'utf8');
+    const passwords = JSON.parse(data);
+    if (passwords[pageKey] && passwords[pageKey] === password) {
+      res.json({ success: true });
     } else {
-      // تسجيل محاولة الدخول الفاشلة
-      if (!loginAttempts[ip]) {
-        loginAttempts[ip] = { count: 1, timestamp: Date.now() };
-      } else {
-        loginAttempts[ip].count += 1;
-        loginAttempts[ip].timestamp = Date.now();
-      }
-      
-      // إذا كان هناك صفحة لكن كلمة المرور خاطئة
-      if (passwordConfig[pageKey]) {
-        return res.status(401).json({ success: false, error: 'Invalid password' });
-      } else {
-        // إذا لم تكن هناك صفحة بالمفتاح المحدد
-        return res.status(401).json({ success: false, error: 'Invalid page key' });
-      }
+      res.status(401).json({ success: false, error: 'Invalid password' });
     }
   } catch (err) {
-    console.error('خطأ أثناء التحقق من كلمة المرور:', err.message);
-    return res.status(500).json({ success: false, error: 'Server error' });
+    console.error('Error reading passwords.json:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// تقديم ملف servicesData.json (إذا كنت تستخدمه)
+// تحميل البيانات من ملف JSON (يُقدم ملف servicesData.json من public)
 app.get('/servicesData.json', (req, res) => {
   try {
     const data = fs.readFileSync(path.join(publicPath, 'servicesData.json'), 'utf8');
@@ -171,32 +68,7 @@ app.get('/servicesData.json', (req, res) => {
   }
 });
 
-// نقطة نهاية لحفظ بيانات الخدمات
-app.post('/api/save-services', (req, res) => {
-  try {
-    const data = req.body;
-    
-    // التحقق من صحة البيانات
-    if (!data || typeof data !== 'object') {
-      return res.status(400).json({ success: false, error: 'Invalid data format' });
-    }
-    
-    // حفظ البيانات في ملف JSON
-    fs.writeFileSync(
-      path.join(publicPath, 'servicesData.json'),
-      JSON.stringify(data, null, 2),
-      'utf8'
-    );
-    
-    console.log('تم حفظ بيانات الخدمات بنجاح');
-    res.json({ success: true, message: 'تم حفظ البيانات بنجاح' });
-  } catch (err) {
-    console.error('Error saving servicesData.json:', err);
-    res.status(500).json({ success: false, error: 'Server error while saving data' });
-  }
-});
-
-// نقطة النهاية للـ DrD3m Proxy
+// نقطة النهاية للـDrD3m Proxy
 app.post('/api/drd3m', async (req, res) => {
   try {
     const postData = new URLSearchParams(req.body);
@@ -214,7 +86,7 @@ app.post('/api/drd3m', async (req, res) => {
   }
 });
 
-// نقطة النهاية للـ Seoclevers Proxy
+// نقطة النهاية للـSeoclevers Proxy
 app.post('/api/seoclevers', async (req, res) => {
   try {
     const postData = new URLSearchParams(req.body);
@@ -238,10 +110,7 @@ app.get('/api/balance/seoclevers', async (req, res) => {
     const response = await fetch('https://seoclevers.com/api/v2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        key: SEOCLEVERS_API_KEY,
-        action: 'balance'
-      })
+      body: new URLSearchParams({ key: SEOCLEVERS_API_KEY, action: 'balance' })
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
@@ -257,10 +126,7 @@ app.get('/api/balance/drdaam', async (req, res) => {
     const response = await fetch('https://drd3m.me/api/v2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        key: DRD3M_API_KEY,
-        action: 'balance'
-      })
+      body: new URLSearchParams({ key: DRD3M_API_KEY, action: 'balance' })
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();

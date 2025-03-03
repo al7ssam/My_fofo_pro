@@ -422,31 +422,6 @@ function filterServices() {
   }
 }
 
-/** دالة لتصفية الخدمات الخام حسب البحث */
-function filterRawServices() {
-  try {
-    const searchInput = document.getElementById('searchRawServiceInput');
-    if (!searchInput) return;
-    const searchVal = searchInput.value.toLowerCase().trim();
-    if (!searchVal) {
-      filteredRawServices = [...globalData.rawServices];
-    } else {
-      filteredRawServices = globalData.rawServices.filter(service => {
-        if (!service) return false;
-        return (
-          (service.name && service.name.toLowerCase().includes(searchVal)) ||
-          (service.id && service.id.toString().includes(searchVal)) ||
-          (service.provider && service.provider.toLowerCase().includes(searchVal))
-        );
-      });
-    }
-    renderRawServices();
-  } catch (error) {
-    console.error('خطأ في تصفية الخدمات الخام:', error);
-    showToast('حدث خطأ أثناء تصفية الخدمات الخام: ' + error.message, true);
-  }
-}
-
 /** حذف/تعديل خدمة مرتبطة */
 function deleteService(serviceId, mainCategory, subCategory, subSubCategory) {
   if (!confirm('هل أنت متأكد من حذف هذه الخدمة؟')) return;
@@ -910,31 +885,9 @@ function populateMainCatSelects() {
 /** تهيئة الصفحة بالكامل */
 async function init() {
   try {
-    // تحميل البيانات من الخادم أولاً
-    try {
-      const response = await fetch('/servicesData.json');
-      if (response.ok) {
-        const serverData = await response.json();
-        if (serverData && serverData.categories && Array.isArray(serverData.services)) {
-          console.log('تم تحميل البيانات من الخادم بنجاح');
-          globalData = serverData;
-          // حفظ في التخزين المحلي كنسخة احتياطية
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(globalData));
-        } else {
-          throw new Error('بيانات الخادم غير صالحة');
-        }
-      } else {
-        throw new Error(`فشل تحميل البيانات من الخادم: ${response.status}`);
-      }
-    } catch (serverError) {
-      console.warn('لم يتم تحميل البيانات من الخادم، سيتم محاولة استخدام التخزين المحلي', serverError);
-      // استخدام التخزين المحلي كبديل
-      globalData = await loadData();
-    }
-    
+    globalData = await loadData();
     if (!globalData || !globalData.categories || !globalData.rawServices)
       throw new Error('البيانات المحملة غير مكتملة أو غير صحيحة');
-    
     if (!globalData.serviceLinks) {
       globalData.serviceLinks = [];
       console.warn('لم يتم العثور على serviceLinks، سيتم إنشاء مصفوفة فارغة');
