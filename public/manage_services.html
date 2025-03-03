@@ -114,8 +114,8 @@
       overflow: hidden;
     }
     .section.open .sectionContent {
-       max-height: 5000px; /* قيمة كبيرة تسمح بعرض جميع المحتويات */
-       overflow-y: auto;   /* تمكين التمرير العمودي */ 
+       max-height: 5000px;
+       overflow-y: auto;
     }
     .section.open .sectionHeader span { transform: rotate(180deg); }
     .sectionContentInner { padding: 10px 15px; }
@@ -166,8 +166,8 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 10px;
-      max-height: 80vh; /* تحديد ارتفاع أقصى كنسبة من ارتفاع الشاشة */
-      overflow-y: auto; /* إضافة التمرير العمودي */
+      max-height: 80vh;
+      overflow-y: auto;
     }
     .serviceCard {
       background: var(--card-bg);
@@ -231,7 +231,6 @@
       text-align: center;
       margin-top: 10px;
     }
-    /* تصميم Toast بنمط داكن مع خلفية شفافة وتأثير ضبابي (iOS) */
     .toast {
       position: fixed;
       left: 50%;
@@ -255,62 +254,75 @@
       background: var(--toast-bg-error);
       backdrop-filter: blur(10px);
     }
-    /* تصميم شاشة القفل لصفحة إدارة الخدمات بنمط iOS */
-    /* شاشة القفل الموحدة */
-.lock-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8); /* خلفية داكنة شفافة */
-  backdrop-filter: blur(15px);    /* تأثير تمويه */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-}
-.lock-container {
-  background: rgba(20, 20, 20, 0.95); /* لون داكن مع شفافية خفيفة */
-  border: 1px solid #444;
-  border-radius: 12px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-  padding: 30px;
-  text-align: center;
-  max-width: 350px;
-  width: 90%;
-  color: #fff;
-}
-.lock-container h2 {
-  font-size: 22px;
-  margin-bottom: 20px;
-}
-.lock-container input {
-  width: 80%;              /* عرض أقل ليتوسط العنصر */
-  padding: 12px;
-  border: 1px solid #666;
-  border-radius: 8px;
-  margin: 0 auto 20px auto; /* محاذاة أفقية تلقائية */
-  font-size: 16px;
-  background: #333;
-  color: #fff;
-  text-align: center;      /* محاذاة النص داخل الحقل إلى المنتصف */
-}
-
-.lock-container button {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  background: var(--primary-color);
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-.lock-container button:hover {
-  background: var(--primary-hover);
-}
-
+    .infoBox {
+      background: rgba(60, 60, 60, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .infoBox p {
+      margin: 5px 0;
+      color: #ddd;
+    }
+    .infoBox strong {
+      color: #fff;
+      font-weight: 600;
+    }
+    .lock-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(15px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .lock-container {
+      background: rgba(20, 20, 20, 0.95);
+      border: 1px solid #444;
+      border-radius: 12px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      text-align: center;
+      max-width: 350px;
+      width: 90%;
+      color: #fff;
+    }
+    .lock-container h2 {
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    .lock-container input {
+      width: 80%;
+      padding: 12px;
+      border: 1px solid #666;
+      border-radius: 8px;
+      margin: 0 auto 20px auto;
+      font-size: 16px;
+      background: #333;
+      color: #fff;
+      text-align: center;
+    }
+    .lock-container button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary-color);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .lock-container button:hover {
+      background: var(--primary-hover);
+    }
     @media (max-width: 600px) {
       .container {
         width: 90%;
@@ -326,19 +338,68 @@
         padding: 10px;
       }
     }
+    .balanceContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 15px;
+    }
+    .balanceCard {
+      flex: 1;
+      min-width: 250px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .balanceTitle {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--text-color);
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+    .balanceAmount {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin: 15px 0;
+    }
+    .balanceInfo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--secondary-color);
+      font-size: 14px;
+    }
+    .balanceRefreshBtn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    .balanceRefreshBtn:hover {
+      background-color: var(--primary-hover);
+    }
+    .balanceSection {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
-  <!-- شاشة القفل لصفحة إدارة الخدمات -->
-<!-- شاشة القفل الموحدة -->
-<div id="lockOverlay" class="lock-overlay">
-  <div class="lock-container">
-    <h2>أدخل كلمة المرور للدخول</h2>
-    <input type="password" id="passwordInput" placeholder="كلمة المرور">
-    <button onclick="checkPassword()">دخول</button>
+  <div id="lockOverlay" class="lock-overlay">
+    <div class="lock-container">
+      <h2>أدخل كلمة المرور للدخول</h2>
+      <input type="password" id="passwordInput" placeholder="كلمة المرور">
+      <button onclick="checkPassword()">دخول</button>
+    </div>
   </div>
-</div>
-
 
   <div class="container">
     <header>
@@ -346,6 +407,35 @@
       <div class="desc">يمكنك إضافة التصنيفات والخدمات وتعديلها وحذفها</div>
       <button class="secBtn" onclick="window.location.href='index.html'">العودة للطلبات</button>
     </header>
+
+    <!-- قسم عرض أرصدة المزودين -->
+    <div class="section balanceSection open" id="balancesSection">
+      <div class="sectionHeader" onclick="toggleSection('balancesSection')">
+        <strong>أرصدة المزودين</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="balanceContainer">
+          <div class="balanceCard">
+            <div class="balanceTitle">سيوكليفرز</div>
+            <div class="balanceAmount" id="seoBalance">جاري التحميل...</div>
+            <div class="balanceInfo">
+              <span class="lastUpdate" id="seoLastUpdate">آخر تحديث: --:--</span>
+              <button class="balanceRefreshBtn" onclick="updateSeoBalance()">تحديث</button>
+            </div>
+          </div>
+          
+          <div class="balanceCard">
+            <div class="balanceTitle">دكتور دعم</div>
+            <div class="balanceAmount" id="drDaamBalance">جاري التحميل...</div>
+            <div class="balanceInfo">
+              <span class="lastUpdate" id="drDaamLastUpdate">آخر تحديث: --:--</span>
+              <button class="balanceRefreshBtn" onclick="updateDrDaamBalance()">تحديث</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- قسم 1: إضافة التصنيفات -->
     <div class="section" id="addCategoriesSection">
@@ -424,12 +514,13 @@
     <!-- قسم 3: الخدمات -->
     <div class="section" id="servicesSection">
       <div class="sectionHeader" onclick="toggleSection('servicesSection')">
-        <strong>الخدمات</strong>
+        <strong>سجل ربط الخدمات بالتصنيفات</strong>
         <span>▼</span>
       </div>
       <div class="sectionContent">
         <div class="sectionContentInner">
           <div class="searchBox">
+            <label style="font-weight: bold; margin-bottom: 5px; display: block;">ابحث عن خدمة:</label>
             <input type="text" id="searchServiceInput" placeholder="ابحث عن خدمة بالاسم أو الرمز..." oninput="filterServices()" />
             <button onclick="filterServices()">بحث</button>
           </div>
@@ -438,15 +529,91 @@
       </div>
     </div>
 
-    <!-- قسم 4: إضافة خدمة جديدة -->
-    <div class="section" id="addServiceSection">
-      <div class="sectionHeader" onclick="toggleSection('addServiceSection')">
+    <!-- قسم جديد: الخدمات الخام -->
+    <div class="section" id="rawServicesListSection">
+      <div class="sectionHeader" onclick="toggleSection('rawServicesListSection')">
+        <strong>الخدمات الخام</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <div class="searchBox">
+            <label style="font-weight: bold; margin-bottom: 5px; display: block;">ابحث عن خدمة خام:</label>
+            <input type="text" id="searchRawServiceInput" placeholder="ابحث عن خدمة خام بالاسم أو الرمز..." oninput="filterRawServices()" />
+            <button onclick="filterRawServices()">بحث</button>
+          </div>
+          <div class="servicesGrid" id="rawServicesGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم 4: إدارة الخدمات الخام -->
+    <div class="section" id="rawServicesSection">
+      <div class="sectionHeader" onclick="toggleSection('rawServicesSection')">
         <strong>إضافة خدمة جديدة</strong>
         <span>▼</span>
       </div>
       <div class="sectionContent">
         <div class="sectionContentInner">
           <div class="flexColumn">
+            <label>رمز الخدمة (ID)</label>
+            <input type="number" id="rawServiceId" placeholder="مثال: 2733">
+            <label>المزود</label>
+            <select id="rawServiceProvider">
+              <option value="seoclevers">سيوكليفرز</option>
+              <option value="drd3m">دكتور دعم</option>
+            </select>
+            <label>الاسم الافتراضي</label>
+            <input type="text" id="rawServiceDefaultName" placeholder="مثال: Tiktok Views">
+            <button class="addBtn" onclick="addRawService()">إضافة خدمة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم 5: ربط الخدمات بالتصنيفات -->
+    <div class="section" id="linkServiceSection">
+      <div class="sectionHeader" onclick="toggleSection('linkServiceSection')">
+        <strong>ربط الخدمات بالتصنيفات</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <div class="flexColumn">
+            <label>اختر الخدمة الخام</label>
+            <select id="selectRawService"></select>
+            <div id="selectedRawServiceInfo" class="infoBox">
+              <!-- معلومات الخدمة المختارة ستظهر هنا -->
+            </div>
+            <hr style="border:none; border-top:1px solid var(--border-color); margin:10px 0;">
+            <label>التصنيف الرئيسي</label>
+            <select id="linkMainCatSel"></select>
+            <label>التصنيف الفرعي</label>
+            <select id="linkSubCatSel"></select>
+            <label>التصنيف الفرعي للفرعي (باقة)</label>
+            <select id="linkSubSubCatSel"></select>
+            <label>اسم الخدمة المعروض</label>
+            <input type="text" id="linkServiceName">
+            <label>الكمية</label>
+            <input type="number" id="linkQuantity">
+            <button class="addBtn" onclick="linkServiceToCategory()">ربط الخدمة بالتصنيف</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم 6: إضافة خدمة جديدة (الطريقة القديمة) -->
+    <div class="section" id="addServiceSection" style="display: none;">
+      <div class="sectionHeader" onclick="toggleSection('addServiceSection')">
+        <strong>إضافة خدمة جديدة (الطريقة القديمة - غير مستخدمة)</strong>
+        <span>▼</span>
+      </div>
+      <div class="sectionContent">
+        <div class="sectionContentInner">
+          <div class="flexColumn">
+            <div class="alert" style="background-color: #ffdddd; color: #990000; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+              <strong>ملاحظة:</strong> هذا القسم غير مستخدم حالياً. يرجى استخدام النظام الجديد (إضافة خدمة خام ثم ربطها بالتصنيفات) للحصول على تجربة أفضل وتقليل تكرار البيانات.
+            </div>
             <label>التصنيف الرئيسي</label>
             <select id="addMainCatSel"></select>
             <label>التصنيف الفرعي</label>
@@ -470,6 +637,11 @@
       </div>
     </div>
   </div> <!-- نهاية .container -->
+
+  <!-- أزرار حفظ وتصدير البيانات -->
+  <div style="text-align: center; margin: 20px 0;">
+    <button class="secBtn" onclick="exportData()" style="margin: 0 10px;">تصدير البيانات</button>
+  </div>
 
   <!-- نافذة التعديل (Modal) -->
   <div class="modalOverlay" id="modalOverlay">

@@ -66,29 +66,57 @@ function translateResponse(response) {
 }
 
 const STORAGE_KEY = 'services_data';
-let globalData = { categories: {}, services: [] };
+let globalData = { categories: {}, services: [], rawServices: [], serviceLinks: [] };
 
 const DRD3M_PROXY_URL = '/api/drd3m';
 const SEOCLEVERS_PROXY_URL = '/api/seoclevers';
 
-/** تحميل البيانات من localStorage أو ملف JSON */
+/** تحميل البيانات من localStorage أو JSON */
 async function loadData() {
-  const storedData = localStorage.getItem(STORAGE_KEY);
-  if (storedData) {
-    return JSON.parse(storedData);
-  } else {
-    try {
-      const response = await fetch('servicesData.json');
-      if (!response.ok) throw new Error('Network response was not ok: ' + response.status);
-      const jsonData = await response.json();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(jsonData));
-      return jsonData;
-    } catch (error) {
-      console.error('فشل في جلب servicesData.json:', error);
-      const fallbackData = { categories: {}, services: [] };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(fallbackData));
-      return fallbackData;
+  try {
+    // تحميل البيانات من التخزين المحلي أو الملف
+    const storedData = localStorage.getItem('services_data');
+    
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        return parsedData;
+      } catch (parseError) {
+        localStorage.removeItem('services_data');
+      }
     }
+    
+    // محاولة تحميل البيانات من عدة مسارات محتملة
+    const possiblePaths = [
+      '/servicesData.json',
+      './servicesData.json',
+      '../servicesData.json',
+      'servicesData.json'
+    ];
+    
+    let data = null;
+    
+    // محاولة كل مسار حتى ينجح أحدها
+    for (const path of possiblePaths) {
+      try {
+        const response = await fetch(path);
+        if (response.ok) {
+          data = await response.json();
+          break; // الخروج من الحلقة عند النجاح
+        }
+      } catch (error) {
+        // تخطي المسار الفاشل والانتقال للمسار التالي
+      }
+    }
+    
+    if (!data) {
+      return { categories: {}, services: [], rawServices: [], serviceLinks: [] };
+    }
+    
+    localStorage.setItem('services_data', JSON.stringify(data));
+    return data;
+  } catch (error) {
+    return { categories: {}, services: [], rawServices: [], serviceLinks: [] };
   }
 }
 
@@ -236,7 +264,18 @@ async function sendOrder() {
 
   for (let srv of matchedServices) {
     try {
-      let apiResp = await sendToApi(srv, link);
+      // الحصول على معلومات المزود من الخدمة الخام
+      let rawService = null;
+      
+      // إذا كانت البيانات تستخدم النظام الجديد (rawServices و serviceLinks)
+      if (globalData.rawServices && globalData.rawServices.length > 0) {
+        rawService = globalData.rawServices.find(rs => rs.id === srv.id);
+      }
+      
+      // إذا لم نجد الخدمة الخام، نستخدم معلومات المزود من الخدمة نفسها
+      const provider = rawService ? rawService.provider : srv.provider;
+      
+      let apiResp = await sendToApi(srv, link, provider);
       let translatedMsg = translateResponse(apiResp);
       if (apiResp && apiResp.order) {
         successes++;
@@ -270,19 +309,70 @@ async function sendOrder() {
   document.getElementById('result').value = '';
 }
 
-// إضافة مستمع الحدث لإعادة تمكين زر الإرسال عند تغيير الرابط
-window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('contentLink').addEventListener('input', function() {
-    const sendBtn = document.getElementById('sendBtn');
-    sendBtn.disabled = false;
-    sendBtn.textContent = "إرسال";
-  });
+/**
+ * إرسال طلب إلى API
+ * @param {Object} service - معلومات الخدمة
+ * @param {string} link - الرابط المراد إرساله
+ * @param {string} provider - مزود الخدمة (drd3m أو seoclevers)
+ */
+async function sendToApi(service, link, provider) {
+  // إذا لم يتم تمرير المزود، نستخدم المزود من الخدمة
+  provider = provider || service.provider;
   
-  // عند تحميل الصفحة، تحميل البيانات وتعبئة القوائم
-  (async () => {
-    globalData = await loadData();
-    populateMainCategories();
-    updateSubCategories();
-    generateFormula();
-  })();
+  const apiEndpoint = `/api/${provider}`;
+  const data = new URLSearchParams();
+  data.append('action', 'add');
+  data.append('service', service.id);
+  data.append('link', link);
+  data.append('quantity', service.quantity);
+
+  try {
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: data
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending to API:', error);
+    throw error;
+  }
+}
+
+// توصيل دالة sendOrder إلى زر الإرسال
+document.addEventListener('DOMContentLoaded', function() {
+  // تحميل البيانات
+  loadData()
+    .then(data => {
+      globalData = data;
+      populateMainCategories();
+      updateSubCategories();
+      generateFormula();
+    })
+    .catch(error => {
+      showToast('حدث خطأ أثناء تحميل البيانات', true);
+    });
+  
+  // إعداد زر الإرسال
+  const sendBtn = document.getElementById('sendBtn');
+  if (sendBtn) {
+    sendBtn.addEventListener('click', sendOrder);
+  }
+  
+  // إعادة تمكين زر الإرسال عند تغيير الرابط
+  const linkInput = document.getElementById('contentLink');
+  if (linkInput) {
+    linkInput.addEventListener('input', function() {
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "إرسال";
+      }
+    });
+  }
 });
