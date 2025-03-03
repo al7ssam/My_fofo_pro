@@ -8,7 +8,7 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// متغيرات البيئة (Environment Variables)
+// مفاتيح API (DrD3m و Seoclevers) من متغيرات البيئة
 const DRD3M_API_KEY = process.env.DRD3M_API_KEY;
 const SEOCLEVERS_API_KEY = process.env.SEOCLEVERS_API_KEY;
 
@@ -36,27 +36,27 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// حذف نقطة النهاية التي تعرض passwords.json
-// app.get('/passwords.json', ... ); // تم إزالتها لأسباب أمنية
-
-// إضافة نقطة نهاية للتحقق من كلمة المرور بشكل آمن
+// ★★★ نقطة نهاية للتحقق من كلمة المرور (آمن) ★★★
+// لا نقدم passwords.json علنًا؛ نقرأه من مجلد config على الخادم ونقارن
 app.post('/api/check-password', (req, res) => {
   const { pageKey, password } = req.body;
   try {
+    // قراءة الملف من المجلد config (الموجود في جذر المشروع)
     const data = fs.readFileSync(path.join(process.cwd(), 'config', 'passwords.json'), 'utf8');
     const passwords = JSON.parse(data);
+
     if (passwords[pageKey] && passwords[pageKey] === password) {
-      res.json({ success: true });
+      return res.json({ success: true });
     } else {
-      res.status(401).json({ success: false, error: 'Invalid password' });
+      return res.status(401).json({ success: false, error: 'Invalid password' });
     }
   } catch (err) {
     console.error('Error reading passwords.json:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// تحميل البيانات من ملف JSON (يُقدم ملف servicesData.json من public)
+// تقديم ملف servicesData.json (إذا كنت تستخدمه)
 app.get('/servicesData.json', (req, res) => {
   try {
     const data = fs.readFileSync(path.join(publicPath, 'servicesData.json'), 'utf8');
@@ -68,7 +68,7 @@ app.get('/servicesData.json', (req, res) => {
   }
 });
 
-// نقطة النهاية للـDrD3m Proxy
+// نقطة النهاية للـ DrD3m Proxy
 app.post('/api/drd3m', async (req, res) => {
   try {
     const postData = new URLSearchParams(req.body);
@@ -86,7 +86,7 @@ app.post('/api/drd3m', async (req, res) => {
   }
 });
 
-// نقطة النهاية للـSeoclevers Proxy
+// نقطة النهاية للـ Seoclevers Proxy
 app.post('/api/seoclevers', async (req, res) => {
   try {
     const postData = new URLSearchParams(req.body);
@@ -110,7 +110,10 @@ app.get('/api/balance/seoclevers', async (req, res) => {
     const response = await fetch('https://seoclevers.com/api/v2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ key: SEOCLEVERS_API_KEY, action: 'balance' })
+      body: new URLSearchParams({
+        key: SEOCLEVERS_API_KEY,
+        action: 'balance'
+      })
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
@@ -126,7 +129,10 @@ app.get('/api/balance/drdaam', async (req, res) => {
     const response = await fetch('https://drd3m.me/api/v2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ key: DRD3M_API_KEY, action: 'balance' })
+      body: new URLSearchParams({
+        key: DRD3M_API_KEY,
+        action: 'balance'
+      })
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
