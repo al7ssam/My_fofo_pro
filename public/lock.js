@@ -5,8 +5,24 @@
  * يتحكم هذا الملف في شاشة القفل التي تظهر عند تحميل الصفحة.
  */
 
-// لا حاجة لتعريف passwords = {} أو fetchPasswords الآن
-// سنرسل طلب POST إلى /api/check-password للتحقق من الكلمة
+/**
+ * تحديد نوع الصفحة الحالية
+ * Determines the current page type based on URL
+ */
+function getCurrentPageKey() {
+  // استخدام URL الحالية لتحديد نوع الصفحة
+  const currentPath = window.location.pathname;
+  
+  // إذا كان اسم الملف هو index.html أو /
+  if (currentPath.includes('index.html') || currentPath === '/' || currentPath.endsWith('/')) {
+    console.log('صفحة الطلبات');
+    return 'orderPage';
+  } else {
+    // افتراض أن أي صفحة أخرى (مثل manage_services.html) هي صفحة الإدارة
+    console.log('صفحة الإدارة');
+    return 'manageServicesPage';
+  }
+}
 
 /**
  * checkPassword
@@ -46,6 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const lockOverlay = document.getElementById('lockOverlay');
   const passwordInput = document.getElementById('passwordInput');
   const loginBtn = document.getElementById('loginBtn'); // تأكد من وجود زر للدخول في HTML
+  
+  // تحديد نوع الصفحة الحالية
+  const currentPageKey = getCurrentPageKey();
+  console.log('نوع الصفحة الحالية:', currentPageKey);
 
   // Support pressing Enter in the input field
   // دعم الضغط على مفتاح Enter في حقل الإدخال
@@ -54,8 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (event.key === 'Enter') {
         event.preventDefault();
         const passVal = passwordInput.value.trim();
-        // pageKey: يمكن أن يكون "manageServicesPage" أو غيره حسب التصميم
-        const isValid = await checkPassword(passVal, 'manageServicesPage');
+        const isValid = await checkPassword(passVal, currentPageKey);
         if (isValid) {
           lockOverlay.style.display = 'none';
         } else {
@@ -69,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
       const passVal = passwordInput.value.trim();
-      const isValid = await checkPassword(passVal, 'manageServicesPage');
+      const isValid = await checkPassword(passVal, currentPageKey);
       if (isValid) {
         lockOverlay.style.display = 'none';
       } else {

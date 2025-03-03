@@ -422,6 +422,31 @@ function filterServices() {
   }
 }
 
+/** دالة لتصفية الخدمات الخام حسب البحث */
+function filterRawServices() {
+  try {
+    const searchInput = document.getElementById('searchRawServiceInput');
+    if (!searchInput) return;
+    const searchVal = searchInput.value.toLowerCase().trim();
+    if (!searchVal) {
+      filteredRawServices = [...globalData.rawServices];
+    } else {
+      filteredRawServices = globalData.rawServices.filter(service => {
+        if (!service) return false;
+        return (
+          (service.name && service.name.toLowerCase().includes(searchVal)) ||
+          (service.id && service.id.toString().includes(searchVal)) ||
+          (service.provider && service.provider.toLowerCase().includes(searchVal))
+        );
+      });
+    }
+    renderRawServices();
+  } catch (error) {
+    console.error('خطأ في تصفية الخدمات الخام:', error);
+    showToast('حدث خطأ أثناء تصفية الخدمات الخام: ' + error.message, true);
+  }
+}
+
 /** حذف/تعديل خدمة مرتبطة */
 function deleteService(serviceId, mainCategory, subCategory, subSubCategory) {
   if (!confirm('هل أنت متأكد من حذف هذه الخدمة؟')) return;

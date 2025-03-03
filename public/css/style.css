@@ -1,193 +1,193 @@
 /* ملف CSS المشترك - style.css */
 :root {
-    --bg-dark: #1a1a1a;
-    --container-bg: #242424;
-    --section-bg: #2c2c2c;
-    --border-color: #3a3a3a;
-    --primary-color: #007bff;
-    --primary-hover: #0056b3;
-    --text-color: #eee;
-    --text-muted: #ccc;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --toast-bg-success: rgba(0, 0, 0, 0.6);
-    --toast-bg-error: rgba(220, 53, 69, 0.6);
-  }
-  
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
-  
-  body {
-    font-family: 'Tajawal', sans-serif;
-    background: var(--bg-dark);
-    margin: 0;
-    padding: 0;
-    direction: rtl;
-    color: var(--text-color);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
+  --bg-dark: #1a1a1a;
+  --container-bg: #242424;
+  --section-bg: #2c2c2c;
+  --border-color: #3a3a3a;
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --text-color: #eee;
+  --text-muted: #ccc;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --toast-bg-success: rgba(0, 0, 0, 0.6);
+  --toast-bg-error: rgba(220, 53, 69, 0.6);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background: var(--bg-dark);
+  margin: 0;
+  padding: 0;
+  direction: rtl;
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 30px auto;
+  background: var(--container-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  padding: 20px;
+}
+
+label {
+  display: block;
+  text-align: right;
+  margin: 16px 0 5px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+select, input, button, textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-family: 'Tajawal', sans-serif;
+  background: var(--section-bg);
+  color: var(--text-color);
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+select {
+  appearance: none;
+  background: var(--section-bg)
+              url("data:image/svg+xml;charset=UTF-8,<svg fill='%23bbb' height='24' viewBox='0 0 24 24' width='24'><path d='M7 10l5 5 5-5z'/></svg>")
+              no-repeat right 0.8rem center/16px 16px;
+  background-position: right 0.9rem center;
+  cursor: pointer;
+}
+
+button {
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: var(--primary-hover);
+}
+
+h1, h2, h3 {
+  color: #fff;
+  margin-top: 0;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  background: var(--toast-bg-success);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  display: none;
+  z-index: 9999;
+  max-width: 80%;
+  text-align: center;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.toast.error {
+  background: var(--toast-bg-error);
+  backdrop-filter: blur(10px);
+}
+
+.lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(15px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.lock-container {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  padding: 30px;
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+  color: #fff;
+}
+
+.lock-container h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.lock-container input {
+  width: 80%;
+  padding: 12px;
+  border: 1px solid #666;
+  border-radius: 8px;
+  margin: 0 auto 20px;
+  font-size: 16px;
+  background: #333;
+  color: #fff;
+  text-align: center;
+}
+
+.lock-container button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.lock-container button:hover {
+  background: var(--primary-hover);
+}
+
+@media (max-width: 600px) {
   .container {
     width: 90%;
-    max-width: 1200px;
-    margin: 30px auto;
-    background: var(--container-bg);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    padding: 20px;
+    max-width: 545px;
+    margin: 10px;
+    padding: 15px;
   }
   
-  label {
-    display: block;
-    text-align: right;
-    margin: 16px 0 5px;
-    font-weight: 600;
+  h1 {
+    font-size: 20px;
+  }
+  
+  select, input, textarea, button {
     font-size: 16px;
-    color: var(--text-muted);
+    padding: 10px;
   }
-  
-  select, input, button, textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    font-family: 'Tajawal', sans-serif;
-    background: var(--section-bg);
-    color: var(--text-color);
-    box-sizing: border-box;
-    margin-bottom: 10px;
-  }
-  
-  select {
-    appearance: none;
-    background: var(--section-bg)
-                url("data:image/svg+xml;charset=UTF-8,<svg fill='%23bbb' height='24' viewBox='0 0 24 24' width='24'><path d='M7 10l5 5 5-5z'/></svg>")
-                no-repeat right 0.8rem center/16px 16px;
-    background-position: right 0.9rem center;
-    cursor: pointer;
-  }
-  
-  button {
-    border: none;
-    background: var(--primary-color);
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 15px;
-    transition: background 0.2s;
-  }
-  
-  button:hover {
-    background: var(--primary-hover);
-  }
-  
-  h1, h2, h3 {
-    color: #fff;
-    margin-top: 0;
-  }
-  
-  .toast {
-    position: fixed;
-    left: 50%;
-    bottom: 20px;
-    transform: translateX(-50%);
-    background: var(--toast-bg-success);
-    backdrop-filter: blur(10px);
-    color: #fff;
-    padding: 14px 20px;
-    border-radius: 12px;
-    font-size: 16px;
-    display: none;
-    z-index: 9999;
-    max-width: 80%;
-    text-align: center;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
-  
-  .toast.error {
-    background: var(--toast-bg-error);
-    backdrop-filter: blur(10px);
-  }
-  
-  .lock-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(15px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-  }
-  
-  .lock-container {
-    background: rgba(20, 20, 20, 0.95);
-    border: 1px solid #444;
-    border-radius: 12px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-    padding: 30px;
-    text-align: center;
-    max-width: 350px;
-    width: 90%;
-    color: #fff;
-  }
-  
-  .lock-container h2 {
-    font-size: 22px;
-    margin-bottom: 20px;
-  }
-  
-  .lock-container input {
-    width: 80%;
-    padding: 12px;
-    border: 1px solid #666;
-    border-radius: 8px;
-    margin: 0 auto 20px;
-    font-size: 16px;
-    background: #333;
-    color: #fff;
-    text-align: center;
-  }
-  
-  .lock-container button {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    background: var(--primary-color);
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-  
-  .lock-container button:hover {
-    background: var(--primary-hover);
-  }
-  
-  @media (max-width: 600px) {
-    .container {
-      width: 90%;
-      max-width: 545px;
-      margin: 10px;
-      padding: 15px;
-    }
-    
-    h1 {
-      font-size: 20px;
-    }
-    
-    select, input, textarea, button {
-      font-size: 16px;
-      padding: 10px;
-    }
-  }
+}

@@ -37,22 +37,125 @@ app.get('/', (req, res) => {
 });
 
 // ★★★ نقطة نهاية للتحقق من كلمة المرور (آمن) ★★★
-// لا نقدم passwords.json علنًا؛ نقرأه من مجلد config على الخادم ونقارن
+
+// متغير عام لتخزين كلمات المرور في ذاكرة الخادم
+// تحميلها مرة واحدة عند بدء الخادم بدلاً من قراءتها مع كل طلب
+let passwordConfig = {};
+
+// دالة لتحميل ملف كلمات المرور
+function loadPasswordConfig() {
+  try {
+    const configPath = path.join(process.cwd(), 'config', 'passwords.json');
+    
+    // التحقق من وجود الملف
+    if (!fs.existsSync(configPath)) {
+      console.error('خطأ: ملف كلمات المرور غير موجود');
+      // إنشاء ملف افتراضي لكلمات المرور
+      const defaultConfig = {
+        "manageServicesPage": "0",
+        "orderPage": "1"
+      };
+      
+      // التأكد من وجود مجلد config
+      if (!fs.existsSync(path.join(process.cwd(), 'config'))) {
+        fs.mkdirSync(path.join(process.cwd(), 'config'), { recursive: true });
+      }
+      
+      // كتابة الملف الافتراضي
+      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
+      console.log('تم إنشاء ملف كلمات المرور الافتراضي');
+      passwordConfig = defaultConfig;
+      return;
+    }
+    
+    // قراءة الملف
+    const data = fs.readFileSync(configPath, 'utf8');
+    
+    // محاولة تحليل JSON
+    try {
+      passwordConfig = JSON.parse(data);
+      console.log('تم تحميل ملف كلمات المرور بنجاح');
+    } catch (parseError) {
+      console.error('خطأ في تنسيق ملف كلمات المرور. استخدام القيم الافتراضية');
+      passwordConfig = {
+        "manageServicesPage": "0",
+        "orderPage": "1"
+      };
+    }
+  } catch (error) {
+    console.error('خطأ أثناء تحميل كلمات المرور:', error.message);
+    passwordConfig = {
+      "manageServicesPage": "0",
+      "orderPage": "1"
+    };
+  }
+}
+
+// تحميل كلمات المرور عند بدء الخادم
+loadPasswordConfig();
+
+// للتتبع ومنع هجمات تخمين كلمات المرور
+const loginAttempts = {};
+const MAX_ATTEMPTS = 5;
+const BLOCK_TIME = 15 * 60 * 1000; // 15 دقيقة بالملي ثانية
+
+// إعادة تعيين عداد محاولات تسجيل الدخول كل 15 دقيقة
+setInterval(() => {
+  const now = Date.now();
+  for (const ip in loginAttempts) {
+    if (now - loginAttempts[ip].timestamp > BLOCK_TIME) {
+      delete loginAttempts[ip];
+    }
+  }
+}, BLOCK_TIME);
+
+// نقطة نهاية للتحقق من كلمة المرور
 app.post('/api/check-password', (req, res) => {
   const { pageKey, password } = req.body;
+  const ip = req.ip || req.connection.remoteAddress;
+  
+  // التحقق من صحة المدخلات
+  if (!pageKey || !password || typeof pageKey !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ success: false, error: 'Invalid input format' });
+  }
+  
+  // فحص عدد محاولات تسجيل الدخول
+  if (loginAttempts[ip] && loginAttempts[ip].count >= MAX_ATTEMPTS) {
+    const timeLeft = Math.ceil((BLOCK_TIME - (Date.now() - loginAttempts[ip].timestamp)) / 60000);
+    return res.status(429).json({ 
+      success: false, 
+      error: `Too many attempts. Please try again later (${timeLeft} minutes remaining).` 
+    });
+  }
+  
   try {
-    // قراءة الملف من المجلد config (الموجود في جذر المشروع)
-    const data = fs.readFileSync(path.join(process.cwd(), 'config', 'passwords.json'), 'utf8');
-    const passwords = JSON.parse(data);
-
-    if (passwords[pageKey] && passwords[pageKey] === password) {
+    // التحقق من كلمة المرور
+    if (passwordConfig[pageKey] && passwordConfig[pageKey] === password) {
+      // إعادة تعيين عداد المحاولات عند نجاح تسجيل الدخول
+      if (loginAttempts[ip]) {
+        delete loginAttempts[ip];
+      }
       return res.json({ success: true });
     } else {
-      return res.status(401).json({ success: false, error: 'Invalid password' });
+      // تسجيل محاولة الدخول الفاشلة
+      if (!loginAttempts[ip]) {
+        loginAttempts[ip] = { count: 1, timestamp: Date.now() };
+      } else {
+        loginAttempts[ip].count += 1;
+        loginAttempts[ip].timestamp = Date.now();
+      }
+      
+      // إذا كان هناك صفحة لكن كلمة المرور خاطئة
+      if (passwordConfig[pageKey]) {
+        return res.status(401).json({ success: false, error: 'Invalid password' });
+      } else {
+        // إذا لم تكن هناك صفحة بالمفتاح المحدد
+        return res.status(401).json({ success: false, error: 'Invalid page key' });
+      }
     }
   } catch (err) {
-    console.error('Error reading passwords.json:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    console.error('خطأ أثناء التحقق من كلمة المرور:', err.message);
+    return res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 
