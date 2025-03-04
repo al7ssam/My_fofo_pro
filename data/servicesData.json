@@ -1,0 +1,100 @@
+{
+  "categories": {
+    "tiktok": {
+      "subCategories": {
+        "normal": { "subSubCategories": [] },
+        "double": { "subSubCategories": [] },
+        "doubleFive": { "subSubCategories": [] }
+      }
+    },
+    "instagram": {
+      "subCategories": {
+        "photo": { "subSubCategories": ["starter", "rise", "top"] },
+        "video": { "subSubCategories": ["starter", "rise", "top"] }
+      }
+    },
+    "rocketTweet": {
+      "subCategories": {
+        "normal": { "subSubCategories": [] },
+        "double": { "subSubCategories": [] }
+      }
+    },
+    "facebook": {
+      "subCategories": {
+        "page": { "subSubCategories": ["basic", "premium"] },
+        "post": { "subSubCategories": [] }
+      }
+    },
+    "youtube": {
+      "subCategories": {
+        "video": { "subSubCategories": ["starter", "premium"] },
+        "channel": { "subSubCategories": [] }
+      }
+    }
+  },
+  "services": [],
+  "rawServices": [
+    { "id": 2733, "provider": "drd3m", "defaultName": "Tiktok Views" },
+    { "id": 2735, "provider": "drd3m", "defaultName": "Tiktok Likes" },
+    { "id": 3250, "provider": "seoclevers", "defaultName": "Tiktok Followers" },
+    { "id": 3527, "provider": "drd3m", "defaultName": "Tiktok Comments" },
+    { "id": 8246, "provider": "drd3m", "defaultName": "Instagram Likes" },
+    { "id": 8467, "provider": "seoclevers", "defaultName": "Instagram Views" },
+    { "id": 3044, "provider": "seoclevers", "defaultName": "Tweet Likes" },
+    { "id": 3718, "provider": "drd3m", "defaultName": "Tweet Retweets" },
+    { "id": 3717, "provider": "drd3m", "defaultName": "Tweet Followers" },
+    { "id": 4521, "provider": "drd3m", "defaultName": "Facebook Likes" },
+    { "id": 4522, "provider": "drd3m", "defaultName": "Facebook Followers" },
+    { "id": 4523, "provider": "drd3m", "defaultName": "Facebook Comments" },
+    { "id": 5631, "provider": "seoclevers", "defaultName": "YouTube Views" },
+    { "id": 5632, "provider": "seoclevers", "defaultName": "YouTube Likes" },
+    { "id": 5633, "provider": "seoclevers", "defaultName": "YouTube Subscribers" },
+    { "id": 1001, "provider": "drd3m", "defaultName": "خدمة تجريبية 1" },
+    { "id": 1002, "provider": "seoclevers", "defaultName": "خدمة تجريبية 2" }
+  ],
+  "serviceLinks": [
+    { "rawServiceId": 2733, "mainCategory": "tiktok", "subCategory": "normal", "subSubCategory": "", "name": "Tiktok Normal #1 (90)", "quantity": 90 },
+    { "rawServiceId": 2735, "mainCategory": "tiktok", "subCategory": "normal", "subSubCategory": "", "name": "Tiktok Normal #2 (444)", "quantity": 444 },
+    { "rawServiceId": 3250, "mainCategory": "tiktok", "subCategory": "normal", "subSubCategory": "", "name": "Tiktok Normal #3 (70000)", "quantity": 70000 },
+    { "rawServiceId": 3527, "mainCategory": "tiktok", "subCategory": "normal", "subSubCategory": "", "name": "Tiktok Normal #4 (888)", "quantity": 888 },
+
+    { "rawServiceId": 2733, "mainCategory": "tiktok", "subCategory": "double", "subSubCategory": "", "name": "Tiktok Double #1 (120)", "quantity": 120 },
+    { "rawServiceId": 2735, "mainCategory": "tiktok", "subCategory": "double", "subSubCategory": "", "name": "Tiktok Double #2 (888)", "quantity": 888 },
+    { "rawServiceId": 3250, "mainCategory": "tiktok", "subCategory": "double", "subSubCategory": "", "name": "Tiktok Double #3 (140K)", "quantity": 140000 },
+    { "rawServiceId": 3527, "mainCategory": "tiktok", "subCategory": "double", "subSubCategory": "", "name": "Tiktok Double #4 (1778)", "quantity": 1778 },
+
+    { "rawServiceId": 2733, "mainCategory": "tiktok", "subCategory": "doubleFive", "subSubCategory": "", "name": "Tiktok Double5 #1 (300)", "quantity": 300 },
+    { "rawServiceId": 2735, "mainCategory": "tiktok", "subCategory": "doubleFive", "subSubCategory": "", "name": "Tiktok Double5 #2 (2220)", "quantity": 2220 },
+    { "rawServiceId": 3250, "mainCategory": "tiktok", "subCategory": "doubleFive", "subSubCategory": "", "name": "Tiktok Double5 #3 (300K)", "quantity": 300000 },
+    { "rawServiceId": 3527, "mainCategory": "tiktok", "subCategory": "doubleFive", "subSubCategory": "", "name": "Tiktok Double5 #4 (4440)", "quantity": 4440 },
+
+    { "rawServiceId": 8246, "mainCategory": "instagram", "subCategory": "photo", "subSubCategory": "starter", "name": "Insta Photo Starter #1", "quantity": 444 },
+    { "rawServiceId": 8246, "mainCategory": "instagram", "subCategory": "photo", "subSubCategory": "rise", "name": "Insta Photo Rise #1", "quantity": 1088 },
+    { "rawServiceId": 8246, "mainCategory": "instagram", "subCategory": "photo", "subSubCategory": "top", "name": "Insta Photo Top #1", "quantity": 2735 },
+
+    { "rawServiceId": 8246, "mainCategory": "instagram", "subCategory": "video", "subSubCategory": "starter", "name": "Insta Video Starter #1", "quantity": 444 },
+    { "rawServiceId": 8467, "mainCategory": "instagram", "subCategory": "video", "subSubCategory": "starter", "name": "Insta Video Starter #2", "quantity": 45000 },
+
+    { "rawServiceId": 8246, "mainCategory": "instagram", "subCategory": "video", "subSubCategory": "rise", "name": "Insta Video Rise #1", "quantity": 1088 },
+    { "rawServiceId": 8467, "mainCategory": "instagram", "subCategory": "video", "subSubCategory": "rise", "name": "Insta Video Rise #2", "quantity": 95000 },
+
+    { "rawServiceId": 8246, "mainCategory": "instagram", "subCategory": "video", "subSubCategory": "top", "name": "Insta Video Top #1", "quantity": 2735 },
+    { "rawServiceId": 8467, "mainCategory": "instagram", "subCategory": "video", "subSubCategory": "top", "name": "Insta Video Top #2", "quantity": 177777 },
+
+    { "rawServiceId": 3044, "mainCategory": "rocketTweet", "subCategory": "normal", "subSubCategory": "", "name": "Tweet Normal #1 (30K)", "quantity": 30000 },
+    { "rawServiceId": 3718, "mainCategory": "rocketTweet", "subCategory": "normal", "subSubCategory": "", "name": "Tweet Normal #2 (40)", "quantity": 40 },
+    { "rawServiceId": 3717, "mainCategory": "rocketTweet", "subCategory": "normal", "subSubCategory": "", "name": "Tweet Normal #3 (40)", "quantity": 40 },
+
+    { "rawServiceId": 3044, "mainCategory": "rocketTweet", "subCategory": "double", "subSubCategory": "", "name": "Tweet Double #1 (75K)", "quantity": 75000 },
+    { "rawServiceId": 3718, "mainCategory": "rocketTweet", "subCategory": "double", "subSubCategory": "", "name": "Tweet Double #2 (40)", "quantity": 40 },
+    { "rawServiceId": 3717, "mainCategory": "rocketTweet", "subCategory": "double", "subSubCategory": "", "name": "Tweet Double #3 (80)", "quantity": 80 },
+
+    { "rawServiceId": 4521, "mainCategory": "facebook", "subCategory": "page", "subSubCategory": "basic", "name": "Facebook Page Likes Basic", "quantity": 500 },
+    { "rawServiceId": 4522, "mainCategory": "facebook", "subCategory": "page", "subSubCategory": "premium", "name": "Facebook Page Followers Premium", "quantity": 1000 },
+    { "rawServiceId": 4523, "mainCategory": "facebook", "subCategory": "post", "subSubCategory": "", "name": "Facebook Post Comments", "quantity": 50 },
+
+    { "rawServiceId": 5631, "mainCategory": "youtube", "subCategory": "video", "subSubCategory": "starter", "name": "YouTube Video Views Starter", "quantity": 1000 },
+    { "rawServiceId": 5632, "mainCategory": "youtube", "subCategory": "video", "subSubCategory": "premium", "name": "YouTube Video Likes Premium", "quantity": 500 },
+    { "rawServiceId": 5633, "mainCategory": "youtube", "subCategory": "channel", "subSubCategory": "", "name": "YouTube Channel Subscribers", "quantity": 100 }
+  ]
+}
