@@ -65,26 +65,20 @@ function translateResponse(response) {
   return JSON.stringify(response);
 }
 
-const STORAGE_KEY = 'services_data';
+const API_ENDPOINTS = {
+  UPDATE_SERVICES: '/api/update-services',
+  SERVER_STATUS: '/api/server-status'
+};
 let globalData = { categories: {}, services: [], rawServices: [], serviceLinks: [] };
 
 const DRD3M_PROXY_URL = '/api/drd3m';
 const SEOCLEVERS_PROXY_URL = '/api/seoclevers';
+const CONNECTION_CHECK_INTERVAL = 30 * 1000; // 30 ثانية
 
-/** تحميل البيانات من localStorage أو JSON */
+/** تحميل البيانات من ملف JSON باستخدام API */
 async function loadData() {
   try {
-    // تحميل البيانات من التخزين المحلي أو الملف
-    const storedData = localStorage.getItem('services_data');
-    
-    if (storedData) {
-      try {
-        const parsedData = JSON.parse(storedData);
-        return parsedData;
-      } catch (parseError) {
-        localStorage.removeItem('services_data');
-      }
-    }
+    showLoading('جاري تحميل البيانات...');
     
     // محاولة تحميل البيانات من عدة مسارات محتملة
     const possiblePaths = [
@@ -102,6 +96,7 @@ async function loadData() {
         const response = await fetch(path);
         if (response.ok) {
           data = await response.json();
+          updateConnectionStatus('success', 'تم الاتصال بالخادم بنجاح');
           break; // الخروج من الحلقة عند النجاح
         }
       } catch (error) {
@@ -110,12 +105,23 @@ async function loadData() {
     }
     
     if (!data) {
+      updateConnectionStatus('error', 'تعذر الاتصال بالخادم');
+      hideLoading();
       return { categories: {}, services: [], rawServices: [], serviceLinks: [] };
     }
     
-    localStorage.setItem('services_data', JSON.stringify(data));
-    return data;
+    if (data && data.categories && Array.isArray(data.rawServices)) {
+      hideLoading();
+      return data;
+    } else {
+      updateConnectionStatus('error', 'البيانات المستلمة غير صالحة');
+      hideLoading();
+      return { categories: {}, services: [], rawServices: [], serviceLinks: [] };
+    }
   } catch (error) {
+    console.error('فشل تحميل البيانات:', error);
+    updateConnectionStatus('error', 'حدث خطأ أثناء تحميل البيانات');
+    hideLoading();
     return { categories: {}, services: [], rawServices: [], serviceLinks: [] };
   }
 }
@@ -237,6 +243,9 @@ async function sendOrder() {
     return;
   }
   
+  // إظهار مؤشر التحميل
+  showLoading('جاري إرسال الطلبات...');
+  
   // تعطيل زر الإرسال أثناء عملية الإرسال
   sendBtn.disabled = true;
   sendBtn.textContent = "جارٍ الإرسال...";
@@ -296,17 +305,23 @@ async function sendOrder() {
   const total = matchedServices.length;
   if (fails === 0) {
     showToast(`تم إرسال جميع الطلبات بنجاح! (عددها ${successes})`);
+    updateConnectionStatus('success', `تم إرسال ${successes} طلب بنجاح`);
   } else if (successes === 0) {
     const msg = `فشلت جميع الطلبات (${fails}/${total}).\nالأسباب:\n` + failReasons.join('\n');
     showToast(msg, true);
+    updateConnectionStatus('error', 'فشل إرسال جميع الطلبات');
   } else {
     const msg = `تم إرسال ${successes} من أصل ${total} بنجاح، وفشلت ${fails}.\nالأسباب:\n` + failReasons.join('\n');
     showToast(msg, true);
+    updateConnectionStatus('warning', `تم إرسال ${successes} طلب بنجاح وفشل ${fails}`);
   }
   
   // التعديل الجديد: تفريغ حقل الرابط ومربع النتائج بعد انتهاء عملية الإرسال
   linkField.value = '';
   document.getElementById('result').value = '';
+  
+  // إخفاء مؤشر التحميل
+  hideLoading();
 }
 
 /**
@@ -327,6 +342,9 @@ async function sendToApi(service, link, provider) {
   data.append('quantity', service.quantity);
 
   try {
+    // تحديث حالة الاتصال قبل الإرسال
+    updateConnectionStatus('warning', `جاري الاتصال بخدمة ${provider}...`);
+    
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -334,18 +352,97 @@ async function sendToApi(service, link, provider) {
     });
 
     if (!response.ok) {
+      updateConnectionStatus('error', `خطأ الخادم: ${response.status}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    if (result.order) {
+      updateConnectionStatus('success', `تم إرسال الطلب بنجاح - رقم ${result.order}`);
+    }
+    return result;
   } catch (error) {
     console.error('Error sending to API:', error);
+    updateConnectionStatus('error', `خطأ في الاتصال: ${error.message}`);
     throw error;
   }
 }
 
+/** وظائف إدارة مؤشرات التحميل وحالة الاتصال */
+
+// إظهار مؤشر التحميل
+function showLoading(message = 'جاري التحميل...') {
+  const loadingIndicator = document.getElementById('loading-indicator');
+  const loadingMessage = loadingIndicator.querySelector('.loading-message');
+  if (loadingMessage) {
+    loadingMessage.textContent = message;
+  }
+  loadingIndicator.classList.remove('hidden');
+}
+
+// إخفاء مؤشر التحميل
+function hideLoading() {
+  const loadingIndicator = document.getElementById('loading-indicator');
+  loadingIndicator.classList.add('hidden');
+}
+
+// تحديث حالة الاتصال
+function updateConnectionStatus(status, message) {
+  const connectionStatus = document.getElementById('connection-status');
+  if (!connectionStatus) return;
+  
+  // إزالة جميع الفئات
+  connectionStatus.classList.remove('success', 'warning', 'error', 'hidden');
+  
+  // إضافة الفئة المناسبة
+  connectionStatus.classList.add(status);
+  
+  // تحديث نص الرسالة
+  connectionStatus.textContent = message;
+  
+  // إظهار المؤشر
+  connectionStatus.classList.remove('hidden');
+  
+  // إخفاء المؤشر بعد فترة زمنية
+  setTimeout(() => {
+    connectionStatus.classList.add('hidden');
+  }, 5000);
+}
+
+// التحقق من حالة الخادم
+async function checkServerStatus() {
+  try {
+    const response = await fetch(API_ENDPOINTS.SERVER_STATUS);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === 'online') {
+        updateConnectionStatus('success', 'الخادم يعمل بشكل طبيعي');
+        return true;
+      }
+    }
+    throw new Error('الخادم لا يستجيب بشكل صحيح');
+  } catch (error) {
+    console.error('خطأ في التحقق من حالة الخادم:', error);
+    updateConnectionStatus('error', 'تعذر الاتصال بالخادم');
+    return false;
+  }
+}
+
+// تفقد حالة الخادم بشكل دوري
+function setupConnectionMonitoring() {
+  // تحقق من الاتصال مباشرة
+  checkServerStatus();
+  
+  // تحقق بشكل دوري
+  setInterval(checkServerStatus, CONNECTION_CHECK_INTERVAL);
+}
+
 // توصيل دالة sendOrder إلى زر الإرسال
 document.addEventListener('DOMContentLoaded', function() {
+  // بدء مراقبة حالة الاتصال بالخادم
+  setupConnectionMonitoring();
+  
   // تحميل البيانات
   loadData()
     .then(data => {
