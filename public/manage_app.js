@@ -8,7 +8,9 @@
 // الثوابت العامة
 const API_ENDPOINTS = {
   UPDATE_SERVICES: '/api/update-services',
-  SERVER_STATUS: '/api/server-status'
+  SERVER_STATUS: '/api/server-status',
+  CHECK_JSON_INTEGRITY: '/api/check-json-integrity',
+  CREATE_BACKUP: '/api/create-backup'
 };
 const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 دقيقة
 const CONNECTION_CHECK_INTERVAL = 30 * 1000; // 30 ثانية
@@ -110,16 +112,39 @@ async function loadData() {
 }
 
 /** حفظ البيانات باستخدام طلب API */
-async function saveData() {
+async function saveData(silentMode = false, retryCount = 0) {
+  const MAX_RETRIES = 3; // عدد محاولات إعادة المحاولة
+  
   try {
-    showLoading('جاري حفظ البيانات...');
+    if (!silentMode) {
+      showLoading('جاري حفظ البيانات...');
+    }
     
     // الحصول على كلمة المرور من صفحة القفل
     const password = window.passwordValue; // متغير من ملف lock.js
     
     if (!password) {
-      hideLoading();
+      if (!silentMode) hideLoading();
       showToast('لم يتم تسجيل الدخول بشكل صحيح', true);
+      return false;
+    }
+    
+    // تكوين البيانات للإرسال
+    const dataToSend = {
+      data: JSON.parse(JSON.stringify(globalData)), // عمل نسخة عميقة لتجنب مشاكل البيانات المرجعية
+      pageKey: 'manage',
+      password: password
+    };
+    
+    // طباعة حجم البيانات للتشخيص
+    const dataSize = JSON.stringify(dataToSend).length;
+    console.log(`حجم البيانات المرسلة: ${dataSize} بايت`);
+    
+    // التحقق من سلامة البيانات قبل الإرسال
+    if (!dataToSend.data.categories || !Array.isArray(dataToSend.data.services) || !Array.isArray(dataToSend.data.rawServices)) {
+      console.error('بنية البيانات غير صالحة:', dataToSend.data);
+      if (!silentMode) hideLoading();
+      showToast('خطأ في بنية البيانات قبل الإرسال', true);
       return false;
     }
     
@@ -128,28 +153,49 @@ async function saveData() {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        data: globalData,
-        pageKey: 'manage',
-        password: password
-      })
+      body: JSON.stringify(dataToSend)
     });
     
-    const result = await response.json();
+    // محاولة تحليل الاستجابة
+    let result;
+    try {
+      result = await response.json();
+    } catch (jsonError) {
+      console.error('خطأ في تحليل استجابة JSON:', jsonError);
+      throw new Error('فشل في قراءة استجابة الخادم: ' + jsonError.message);
+    }
     
     if (response.ok && result.success) {
-      hideLoading();
-      updateConnectionStatus('success', 'تم حفظ البيانات بنجاح');
-      showToast('تم حفظ البيانات بنجاح');
+      if (!silentMode) {
+        hideLoading();
+        updateConnectionStatus('success', 'تم حفظ البيانات بنجاح');
+        showToast('تم حفظ البيانات بنجاح');
+      }
       return true;
     } else {
+      console.error('استجابة الخادم غير ناجحة:', result);
       throw new Error(result.error || 'حدث خطأ أثناء حفظ البيانات');
     }
   } catch (error) {
-    console.error('خطأ في حفظ البيانات:', error);
-    hideLoading();
-    updateConnectionStatus('error', 'فشل حفظ البيانات');
-    showToast(`فشل حفظ البيانات: ${error.message}`, true);
+    console.error(`محاولة حفظ البيانات ${retryCount + 1}/${MAX_RETRIES} فشلت:`, error);
+    
+    // التحقق من إذا كان يجب إعادة المحاولة
+    if (retryCount < MAX_RETRIES) {
+      console.log(`إعادة محاولة حفظ البيانات (${retryCount + 1}/${MAX_RETRIES})...`);
+      return new Promise(resolve => {
+        // إعادة المحاولة بعد تأخير تصاعدي
+        setTimeout(async () => {
+          const retryResult = await saveData(silentMode, retryCount + 1);
+          resolve(retryResult);
+        }, 1000 * (retryCount + 1)); // 1s, 2s, 3s
+      });
+    }
+    
+    if (!silentMode) {
+      hideLoading();
+      updateConnectionStatus('error', 'فشل حفظ البيانات');
+    }
+    showToast(`فشل حفظ البيانات بعد عدة محاولات: ${error.message}`, true);
     return false;
   }
 }
@@ -211,144 +257,523 @@ function updateSubSubCats() {
   updateSubSubCategorySelect(mainCatVal, subCatVal, subSubCatSelect, '-- اختر الباقة --');
 }
 
-function addMainCategory() {
-  const newMainCat = document.getElementById('newMainCat').value.trim();
-  if (!newMainCat) return showToast('الرجاء إدخال اسم التصنيف الرئيسي', true);
-  if (globalData.categories[newMainCat]) return showToast('هذا التصنيف موجود مسبقًا', true);
-  globalData.categories[newMainCat] = { subCategories: {} };
-  saveData();
-  populateMainCatForAddSub();
-  populateMainCatSelect();
-  populateLinkCategorySelectors();
-  document.getElementById('newMainCat').value = '';
-  showToast('تمت إضافة التصنيف الرئيسي بنجاح');
-}
-
-function addSubCat() {
-  const mainCatVal = document.getElementById('selectMainCatForAddSub').value;
-  if (!mainCatVal) return showToast('اختر تصنيفًا رئيسيًا أولاً', true);
-  const newSubCat = document.getElementById('newSubCat').value.trim();
-  if (!newSubCat) return showToast('الرجاء إدخال اسم التصنيف الفرعي', true);
-  const subCats = globalData.categories[mainCatVal].subCategories;
-  if (subCats[newSubCat]) return showToast('التصنيف الفرعي موجود مسبقًا', true);
-  subCats[newSubCat] = { subSubCategories: [] };
-  saveData();
-  populateSubCatForAddSubSub();
-  updateSubCats();
-  populateLinkCategorySelectors();
-  document.getElementById('newSubCat').value = '';
-  showToast('تمت إضافة التصنيف الفرعي بنجاح');
-}
-
-function addSubSubCat() {
-  const mainCatVal = document.getElementById('selectMainCatForAddSub').value;
-  const subCatVal = document.getElementById('selectSubCatForAddSubSub').value;
-  if (!mainCatVal || !subCatVal) return showToast('اختر تصنيفًا رئيسيًا وفرعيًا', true);
-  const newSubSubCat = document.getElementById('newSubSubCat').value.trim();
-  if (!newSubSubCat) return showToast('الرجاء إدخال اسم الباقة', true);
-  const subSubs = globalData.categories[mainCatVal].subCategories[subCatVal].subSubCategories;
-  if (subSubs.includes(newSubSubCat)) return showToast('هذه الباقة موجودة مسبقًا', true);
-  subSubs.push(newSubSubCat);
-  saveData();
-  populateSubCatForAddSubSub();
-  updateSubSubCats();
-  populateLinkCategorySelectors();
-  document.getElementById('newSubSubCat').value = '';
-  showToast('تمت إضافة الباقة بنجاح');
-}
-
-function deleteMainCat() {
-  const mainCatVal = document.getElementById('selectMainCat').value;
-  if (!mainCatVal) return;
-  if (!confirm('هل أنت متأكد من حذف التصنيف الرئيسي وجميع التصنيفات الفرعية بداخله؟')) return;
-  delete globalData.categories[mainCatVal];
-  saveData();
-  populateMainCatForAddSub();
-  populateMainCatSelect();
-  populateLinkCategorySelectors();
-  document.getElementById('selectSubCat').innerHTML = '';
-  document.getElementById('selectSubSubCat').innerHTML = '';
-  showToast('تم حذف التصنيف الرئيسي بنجاح');
-}
-
-function renameMainCat() {
-  const mainCatVal = document.getElementById('selectMainCat').value;
-  if (!mainCatVal) return;
-  const newName = prompt('أدخل الاسم الجديد للتصنيف الرئيسي:', mainCatVal);
-  if (!newName || !newName.trim()) return;
-  if (globalData.categories[newName]) return showToast('التصنيف الجديد موجود مسبقًا', true);
-  globalData.categories[newName] = globalData.categories[mainCatVal];
-  delete globalData.categories[mainCatVal];
-  saveData();
-  populateMainCatForAddSub();
-  populateMainCatSelect();
-  populateLinkCategorySelectors();
-  showToast('تم تعديل التصنيف الرئيسي بنجاح');
-}
-
-function deleteSubCat() {
-  const mainCatVal = document.getElementById('selectMainCat').value;
-  const subCatVal = document.getElementById('selectSubCat').value;
-  if (!mainCatVal || !subCatVal) return;
-  if (!confirm('هل أنت متأكد من حذف التصنيف الفرعي وجميع الباقات داخله؟')) return;
-  delete globalData.categories[mainCatVal].subCategories[subCatVal];
-  saveData();
-  updateSubCats();
-  populateSubCatForAddSubSub();
-  populateLinkCategorySelectors();
-  showToast('تم حذف التصنيف الفرعي بنجاح');
-}
-
-function renameSubCat() {
-  const mainCatVal = document.getElementById('selectMainCat').value;
-  const subCatVal = document.getElementById('selectSubCat').value;
-  if (!mainCatVal || !subCatVal) return;
-  const newName = prompt('أدخل الاسم الجديد للتصنيف الفرعي:', subCatVal);
-  if (!newName || !newName.trim()) return;
-  const subCats = globalData.categories[mainCatVal].subCategories;
-  if (subCats[newName]) return showToast('التصنيف الفرعي الجديد موجود مسبقًا', true);
-  subCats[newName] = subCats[subCatVal];
-  delete subCats[subCatVal];
-  saveData();
-  updateSubCats();
-  populateSubCatForAddSubSub();
-  populateLinkCategorySelectors();
-  showToast('تم تعديل التصنيف الفرعي بنجاح');
-}
-
-function deleteSubSubCat() {
-  const mainCatVal = document.getElementById('selectMainCat').value;
-  const subCatVal = document.getElementById('selectSubCat').value;
-  const subSubCatVal = document.getElementById('selectSubSubCat').value;
-  if (!mainCatVal || !subCatVal || !subSubCatVal) return;
-  if (!confirm('هل أنت متأكد من حذف هذه الباقة؟')) return;
-  const subSubs = globalData.categories[mainCatVal].subCategories[subCatVal].subSubCategories;
-  const idx = subSubs.indexOf(subSubCatVal);
-  if (idx !== -1) {
-    subSubs.splice(idx, 1);
-    saveData();
-    updateSubSubCats();
-    populateLinkCategorySelectors();
-    showToast('تم حذف التصنيف الفرعي للفرعي بنجاح');
+/** إضافة تصنيف رئيسي جديد */
+async function addMainCategory() {
+  try {
+    const newMainCat = document.getElementById('newMainCat').value.trim();
+    
+    // التحقق من صحة المدخلات
+    if (!newMainCat) {
+      showToast('الرجاء إدخال اسم التصنيف الرئيسي', true);
+      return false;
+    }
+    
+    // التحقق من عدم وجود التصنيف مسبقًا
+    if (globalData.categories[newMainCat]) {
+      showToast('هذا التصنيف موجود مسبقًا', true);
+      return false;
+    }
+    
+    showLoading('جاري إضافة التصنيف الرئيسي...');
+    
+    // إضافة التصنيف الجديد
+    globalData.categories[newMainCat] = { subCategories: {} };
+    
+    // حفظ البيانات إلى ملف JSON
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      populateMainCatForAddSub();
+      populateMainCatSelect();
+      populateLinkCategorySelectors();
+      
+      // إعادة تعيين حقل الإدخال
+      document.getElementById('newMainCat').value = '';
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تمت إضافة التصنيف الرئيسي وحفظ البيانات بنجاح');
+    } else {
+      showToast('تمت إضافة التصنيف لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في إضافة التصنيف الرئيسي:', error);
+    hideLoading();
+    showToast(`خطأ في إضافة التصنيف: ${error.message}`, true);
+    return false;
   }
 }
 
-function renameSubSubCat() {
-  const mainCatVal = document.getElementById('selectMainCat').value;
-  const subCatVal = document.getElementById('selectSubCat').value;
-  const subSubCatVal = document.getElementById('selectSubSubCat').value;
-  if (!mainCatVal || !subCatVal || !subSubCatVal) return;
-  const newName = prompt('أدخل الاسم الجديد للباقة:', subSubCatVal);
-  if (!newName || !newName.trim()) return;
-  const subSubs = globalData.categories[mainCatVal].subCategories[subCatVal].subSubCategories;
-  if (subSubs.includes(newName)) return showToast('الباقة الجديدة موجودة مسبقًا', true);
-  const idx = subSubs.indexOf(subSubCatVal);
-  if (idx !== -1) {
+/** إضافة تصنيف فرعي جديد */
+async function addSubCat() {
+  try {
+    // الحصول على القيم
+    const mainCatVal = document.getElementById('selectMainCatForAddSub').value;
+    const newSubCat = document.getElementById('newSubCat').value.trim();
+    
+    // التحقق من اختيار تصنيف رئيسي
+    if (!mainCatVal) {
+      showToast('اختر تصنيفًا رئيسيًا أولاً', true);
+      return false;
+    }
+    
+    // التحقق من إدخال اسم التصنيف الفرعي
+    if (!newSubCat) {
+      showToast('الرجاء إدخال اسم التصنيف الفرعي', true);
+      return false;
+    }
+    
+    // التحقق من عدم وجود التصنيف الفرعي مسبقًا
+    const subCats = globalData.categories[mainCatVal].subCategories;
+    if (subCats[newSubCat]) {
+      showToast('التصنيف الفرعي موجود مسبقًا', true);
+      return false;
+    }
+    
+    showLoading('جاري إضافة التصنيف الفرعي...');
+    
+    // إضافة التصنيف الفرعي الجديد
+    subCats[newSubCat] = { subSubCategories: [] };
+    
+    // حفظ البيانات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      populateSubCatForAddSubSub();
+      updateSubCats();
+      populateLinkCategorySelectors();
+      
+      // إعادة تعيين حقل الإدخال
+      document.getElementById('newSubCat').value = '';
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تمت إضافة التصنيف الفرعي وحفظ البيانات بنجاح');
+    } else {
+      showToast('تمت إضافة التصنيف الفرعي لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في إضافة التصنيف الفرعي:', error);
+    hideLoading();
+    showToast(`خطأ في إضافة التصنيف الفرعي: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** إضافة باقة (تصنيف فرعي للفرعي) جديدة */
+async function addSubSubCat() {
+  try {
+    // الحصول على القيم
+    const mainCatVal = document.getElementById('selectMainCatForAddSub').value;
+    const subCatVal = document.getElementById('selectSubCatForAddSubSub').value;
+    const newSubSubCat = document.getElementById('newSubSubCat').value.trim();
+    
+    // التحقق من اختيار التصنيفات
+    if (!mainCatVal || !subCatVal) {
+      showToast('اختر تصنيفًا رئيسيًا وفرعيًا', true);
+      return false;
+    }
+    
+    // التحقق من إدخال اسم الباقة
+    if (!newSubSubCat) {
+      showToast('الرجاء إدخال اسم الباقة', true);
+      return false;
+    }
+    
+    // التحقق من عدم وجود الباقة مسبقًا
+    const subSubs = globalData.categories[mainCatVal].subCategories[subCatVal].subSubCategories;
+    if (subSubs.includes(newSubSubCat)) {
+      showToast('هذه الباقة موجودة مسبقًا', true);
+      return false;
+    }
+    
+    showLoading('جاري إضافة الباقة...');
+    
+    // إضافة الباقة الجديدة
+    subSubs.push(newSubSubCat);
+    
+    // حفظ البيانات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      populateSubCatForAddSubSub();
+      updateSubSubCats();
+      populateLinkCategorySelectors();
+      
+      // إعادة تعيين حقل الإدخال
+      document.getElementById('newSubSubCat').value = '';
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تمت إضافة الباقة وحفظ البيانات بنجاح');
+    } else {
+      showToast('تمت إضافة الباقة لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في إضافة الباقة:', error);
+    hideLoading();
+    showToast(`خطأ في إضافة الباقة: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** حذف تصنيف رئيسي */
+async function deleteMainCat() {
+  try {
+    // الحصول على التصنيف الرئيسي المحدد
+    const mainCatVal = document.getElementById('selectMainCat').value;
+    
+    // التحقق من اختيار تصنيف رئيسي
+    if (!mainCatVal) {
+      showToast('يرجى اختيار تصنيف رئيسي لحذفه', true);
+      return false;
+    }
+    
+    // طلب تأكيد من المستخدم
+    if (!confirm('هل أنت متأكد من حذف التصنيف الرئيسي وجميع التصنيفات الفرعية بداخله؟')) {
+      return false;
+    }
+    
+    showLoading('جاري حذف التصنيف الرئيسي...');
+    
+    // حذف التصنيف الرئيسي
+    delete globalData.categories[mainCatVal];
+    
+    // حفظ التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      populateMainCatForAddSub();
+      populateMainCatSelect();
+      populateLinkCategorySelectors();
+      
+      // إعادة تعيين القوائم الفرعية لفارغة
+      document.getElementById('selectSubCat').innerHTML = '';
+      document.getElementById('selectSubSubCat').innerHTML = '';
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تم حذف التصنيف الرئيسي وحفظ التغييرات بنجاح');
+    } else {
+      showToast('تم حذف التصنيف لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في حذف التصنيف الرئيسي:', error);
+    hideLoading();
+    showToast(`خطأ في حذف التصنيف الرئيسي: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** إعادة تسمية تصنيف رئيسي */
+async function renameMainCat() {
+  try {
+    // الحصول على التصنيف الرئيسي المحدد
+    const mainCatVal = document.getElementById('selectMainCat').value;
+    
+    // التحقق من اختيار تصنيف رئيسي
+    if (!mainCatVal) {
+      showToast('يرجى اختيار تصنيف رئيسي لإعادة تسميته', true);
+      return false;
+    }
+    
+    // طلب الاسم الجديد من المستخدم
+    const newName = prompt('أدخل الاسم الجديد للتصنيف الرئيسي:', mainCatVal);
+    
+    // التحقق من إدخال اسم جديد صحيح
+    if (!newName || !newName.trim()) {
+      return false;
+    }
+    
+    // التحقق من عدم وجود الاسم الجديد مسبقًا
+    if (globalData.categories[newName]) {
+      showToast('التصنيف الجديد موجود مسبقًا', true);
+      return false;
+    }
+    
+    showLoading('جاري إعادة تسمية التصنيف الرئيسي...');
+    
+    // إعادة تسمية التصنيف الرئيسي
+    globalData.categories[newName] = globalData.categories[mainCatVal];
+    delete globalData.categories[mainCatVal];
+    
+    // حفظ التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      populateMainCatForAddSub();
+      populateMainCatSelect();
+      populateLinkCategorySelectors();
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تم تعديل التصنيف الرئيسي وحفظ التغييرات بنجاح');
+    } else {
+      showToast('تم تعديل التصنيف لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في إعادة تسمية التصنيف الرئيسي:', error);
+    hideLoading();
+    showToast(`خطأ في إعادة تسمية التصنيف: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** حذف تصنيف فرعي */
+async function deleteSubCat() {
+  try {
+    // الحصول على التصنيفات المحددة
+    const mainCatVal = document.getElementById('selectMainCat').value;
+    const subCatVal = document.getElementById('selectSubCat').value;
+    
+    // التحقق من اختيار التصنيفات
+    if (!mainCatVal || !subCatVal) {
+      showToast('يرجى اختيار تصنيف رئيسي وفرعي للحذف', true);
+      return false;
+    }
+    
+    // طلب تأكيد من المستخدم
+    if (!confirm('هل أنت متأكد من حذف التصنيف الفرعي وجميع الباقات داخله؟')) {
+      return false;
+    }
+    
+    showLoading('جاري حذف التصنيف الفرعي...');
+    
+    // حذف التصنيف الفرعي
+    delete globalData.categories[mainCatVal].subCategories[subCatVal];
+    
+    // حفظ التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      updateSubCats();
+      populateSubCatForAddSubSub();
+      populateLinkCategorySelectors();
+      document.getElementById('selectSubSubCat').innerHTML = '';
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تم حذف التصنيف الفرعي وحفظ التغييرات بنجاح');
+    } else {
+      showToast('تم حذف التصنيف لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في حذف التصنيف الفرعي:', error);
+    hideLoading();
+    showToast(`خطأ في حذف التصنيف الفرعي: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** إعادة تسمية تصنيف فرعي */
+async function renameSubCat() {
+  try {
+    // الحصول على التصنيفات المحددة
+    const mainCatVal = document.getElementById('selectMainCat').value;
+    const subCatVal = document.getElementById('selectSubCat').value;
+    
+    // التحقق من اختيار التصنيفات
+    if (!mainCatVal || !subCatVal) {
+      showToast('يرجى اختيار تصنيف رئيسي وفرعي لإعادة التسمية', true);
+      return false;
+    }
+    
+    // طلب الاسم الجديد من المستخدم
+    const newName = prompt('أدخل الاسم الجديد للتصنيف الفرعي:', subCatVal);
+    
+    // التحقق من إدخال اسم جديد صحيح
+    if (!newName || !newName.trim()) {
+      return false;
+    }
+    
+    const subCats = globalData.categories[mainCatVal].subCategories;
+    
+    // التحقق من عدم وجود الاسم الجديد مسبقًا
+    if (subCats[newName]) {
+      showToast('التصنيف الفرعي الجديد موجود مسبقًا', true);
+      return false;
+    }
+    
+    showLoading('جاري إعادة تسمية التصنيف الفرعي...');
+    
+    // إعادة تسمية التصنيف الفرعي
+    subCats[newName] = subCats[subCatVal];
+    delete subCats[subCatVal];
+    
+    // حفظ التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      updateSubCats();
+      populateSubCatForAddSubSub();
+      populateLinkCategorySelectors();
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تم تعديل التصنيف الفرعي وحفظ التغييرات بنجاح');
+    } else {
+      showToast('تم تعديل التصنيف لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في إعادة تسمية التصنيف الفرعي:', error);
+    hideLoading();
+    showToast(`خطأ في إعادة تسمية التصنيف الفرعي: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** حذف باقة (تصنيف فرعي للفرعي) */
+async function deleteSubSubCat() {
+  try {
+    // الحصول على التصنيفات المحددة
+    const mainCatVal = document.getElementById('selectMainCat').value;
+    const subCatVal = document.getElementById('selectSubCat').value;
+    const subSubCatVal = document.getElementById('selectSubSubCat').value;
+    
+    // التحقق من اختيار جميع التصنيفات
+    if (!mainCatVal || !subCatVal || !subSubCatVal) {
+      showToast('يرجى اختيار التصنيفات والباقة للحذف', true);
+      return false;
+    }
+    
+    // طلب تأكيد من المستخدم
+    if (!confirm('هل أنت متأكد من حذف هذه الباقة؟')) {
+      return false;
+    }
+    
+    // الحصول على مصفوفة الباقات
+    const subSubs = globalData.categories[mainCatVal].subCategories[subCatVal].subSubCategories;
+    const idx = subSubs.indexOf(subSubCatVal);
+    
+    // التحقق من وجود الباقة
+    if (idx === -1) {
+      showToast('لم يتم العثور على الباقة', true);
+      return false;
+    }
+    
+    showLoading('جاري حذف الباقة...');
+    
+    // حذف الباقة
+    subSubs.splice(idx, 1);
+    
+    // حفظ التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      updateSubSubCats();
+      populateLinkCategorySelectors();
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تم حذف الباقة وحفظ التغييرات بنجاح');
+    } else {
+      showToast('تم حذف الباقة لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في حذف الباقة:', error);
+    hideLoading();
+    showToast(`خطأ في حذف الباقة: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** إعادة تسمية باقة (تصنيف فرعي للفرعي) */
+async function renameSubSubCat() {
+  try {
+    // الحصول على التصنيفات المحددة
+    const mainCatVal = document.getElementById('selectMainCat').value;
+    const subCatVal = document.getElementById('selectSubCat').value;
+    const subSubCatVal = document.getElementById('selectSubSubCat').value;
+    
+    // التحقق من اختيار جميع التصنيفات
+    if (!mainCatVal || !subCatVal || !subSubCatVal) {
+      showToast('يرجى اختيار التصنيفات والباقة لإعادة التسمية', true);
+      return false;
+    }
+    
+    // طلب الاسم الجديد من المستخدم
+    const newName = prompt('أدخل الاسم الجديد للباقة:', subSubCatVal);
+    
+    // التحقق من إدخال اسم جديد صحيح
+    if (!newName || !newName.trim()) {
+      return false;
+    }
+    
+    // الحصول على مصفوفة الباقات
+    const subSubs = globalData.categories[mainCatVal].subCategories[subCatVal].subSubCategories;
+    
+    // التحقق من عدم وجود الاسم الجديد مسبقًا
+    if (subSubs.includes(newName)) {
+      showToast('الباقة الجديدة موجودة مسبقًا', true);
+      return false;
+    }
+    
+    // التحقق من وجود الباقة المراد تغيير اسمها
+    const idx = subSubs.indexOf(subSubCatVal);
+    if (idx === -1) {
+      showToast('لم يتم العثور على الباقة', true);
+      return false;
+    }
+    
+    showLoading('جاري إعادة تسمية الباقة...');
+    
+    // إعادة تسمية الباقة
     subSubs[idx] = newName;
-    saveData();
-    updateSubSubCats();
-    populateLinkCategorySelectors();
-    showToast('تم تعديل الاسم بنجاح');
+    
+    // حفظ التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    if (saveResult) {
+      // تحديث الواجهة
+      updateSubSubCats();
+      populateLinkCategorySelectors();
+      
+      // إعلام المستخدم بالنجاح
+      showToast('تم تعديل اسم الباقة وحفظ التغييرات بنجاح');
+    } else {
+      showToast('تم تعديل اسم الباقة لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في إعادة تسمية الباقة:', error);
+    hideLoading();
+    showToast(`خطأ في إعادة تسمية الباقة: ${error.message}`, true);
+    return false;
   }
 }
 
@@ -467,14 +892,65 @@ function filterServices() {
 }
 
 /** حذف/تعديل خدمة مرتبطة */
-function deleteService(serviceId, mainCategory, subCategory, subSubCategory) {
-  if (!confirm('هل أنت متأكد من حذف هذه الخدمة؟')) return;
-  const index = globalData.services.findIndex(s => s.id === serviceId && s.mainCategory === mainCategory && s.subCategory === subCategory && s.subSubCategory === subSubCategory);
-  if (index !== -1) {
-    globalData.services.splice(index, 1);
-    saveData();
-    showToast('تم حذف الخدمة بنجاح');
+/** حذف خدمة من القائمة */
+async function deleteService(serviceId, mainCategory, subCategory, subSubCategory) {
+  try {
+    // تأكيد الحذف
+    if (!confirm('هل أنت متأكد من حذف هذه الخدمة؟')) return;
+
+    showLoading('جاري حذف الخدمة...');
+    
+    // البحث عن الخدمة في مصفوفة الخدمات
+    const serviceIndex = globalData.services.findIndex(s => 
+      s.id === serviceId && 
+      s.mainCategory === mainCategory && 
+      s.subCategory === subCategory && 
+      s.subSubCategory === subSubCategory
+    );
+    
+    if (serviceIndex === -1) {
+      hideLoading();
+      showToast('الخدمة غير موجودة في قائمة الخدمات', true);
+      return;
+    }
+    
+    // حذف الخدمة من مصفوفة الخدمات
+    globalData.services.splice(serviceIndex, 1);
+    
+    // البحث عن رابط الخدمة وحذفه من مصفوفة الروابط
+    const linkIndex = globalData.serviceLinks.findIndex(link => 
+      link.rawServiceId === serviceId && 
+      link.mainCategory === mainCategory && 
+      link.subCategory === subCategory && 
+      link.subSubCategory === subSubCategory
+    );
+    
+    if (linkIndex !== -1) {
+      globalData.serviceLinks.splice(linkIndex, 1);
+      console.log(`تم حذف رابط الخدمة من مصفوفة الروابط بنجاح`);
+    }
+    
+    // حفظ البيانات المحدثة
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    // عرض النتيجة للمستخدم
+    if (saveResult) {
+      showToast('تم حذف الخدمة وحفظ البيانات بنجاح');
+    } else {
+      showToast('تم حذف الخدمة لكن فشل حفظ البيانات', true);
+    }
+    
+    // تحديث عرض الخدمات
     filterServices();
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في حذف الخدمة:', error);
+    hideLoading();
+    showToast(`خطأ في حذف الخدمة: ${error.message}`, true);
+    return false;
   }
 }
 
@@ -561,37 +1037,89 @@ function populateEditMainCategorySelect(currentMainCategory) {
   });
 }
 
-function saveEditService() {
-  if (currentEditServiceId === null) return;
-  const newRawServiceId = Number(document.getElementById('editRawServiceSelect').value);
-  const newMainCategory = document.getElementById('editMainCategorySelect').value;
-  const newSubCategory = document.getElementById('editSubCategorySelect').value;
-  const newSubSubCategory = document.getElementById('editSubSubCategorySelect').value;
-  const newName = document.getElementById('editServiceName').value.trim();
-  const newQty = Number(document.getElementById('editQuantity').value);
-  if (!newName || !newRawServiceId || !newMainCategory || !newQty) return showToast('الرجاء تعبئة جميع الحقول المطلوبة', true);
-  const rawService = globalData.rawServices.find(s => s.id === newRawServiceId);
-  if (!rawService) return showToast('الخدمة الخام غير موجودة', true);
-  const serviceLinkIndex = globalData.serviceLinks.findIndex(link => 
-    link.rawServiceId === currentEditServiceId && 
-    link.mainCategory === currentEditMainCategory && 
-    link.subCategory === currentEditSubCategory && 
-    link.subSubCategory === currentEditSubSubCategory
-  );
-  if (serviceLinkIndex === -1) return showToast('لم يتم العثور على رابط الخدمة', true);
-  globalData.serviceLinks[serviceLinkIndex] = {
-    rawServiceId: newRawServiceId,
-    mainCategory: newMainCategory,
-    subCategory: newSubCategory,
-    subSubCategory: newSubSubCategory,
-    name: newName,
-    quantity: newQty
-  };
-  updateServicesFromLinks();
-  saveData();
-  closeModal();
-  showToast('تم حفظ التعديلات بنجاح');
-  filterServices();
+/** حفظ تعديلات الخدمة */
+async function saveEditService() {
+  try {
+    // التحقق من وجود بيانات التحرير الحالية
+    if (currentEditServiceId === null) {
+      showToast('لا توجد خدمة محددة للتعديل', true);
+      return false;
+    }
+    
+    showLoading('جاري حفظ التعديلات...');
+    
+    // الحصول على القيم الجديدة من النموذج
+    const newRawServiceId = Number(document.getElementById('editRawServiceSelect').value);
+    const newMainCategory = document.getElementById('editMainCategorySelect').value;
+    const newSubCategory = document.getElementById('editSubCategorySelect').value;
+    const newSubSubCategory = document.getElementById('editSubSubCategorySelect').value;
+    const newName = document.getElementById('editServiceName').value.trim();
+    const newQty = Number(document.getElementById('editQuantity').value);
+    
+    // التحقق من صحة البيانات
+    if (!newName || !newRawServiceId || !newMainCategory || !newQty) {
+      hideLoading();
+      showToast('الرجاء تعبئة جميع الحقول المطلوبة', true);
+      return false;
+    }
+    
+    // التحقق من وجود الخدمة الخام
+    const rawService = globalData.rawServices.find(s => s.id === newRawServiceId);
+    if (!rawService) {
+      hideLoading();
+      showToast('الخدمة الخام غير موجودة', true);
+      return false;
+    }
+    
+    // البحث عن رابط الخدمة الحالي
+    const serviceLinkIndex = globalData.serviceLinks.findIndex(link => 
+      link.rawServiceId === currentEditServiceId && 
+      link.mainCategory === currentEditMainCategory && 
+      link.subCategory === currentEditSubCategory && 
+      link.subSubCategory === currentEditSubSubCategory
+    );
+    
+    if (serviceLinkIndex === -1) {
+      hideLoading();
+      showToast('لم يتم العثور على رابط الخدمة', true);
+      return false;
+    }
+    
+    // تحديث رابط الخدمة بالقيم الجديدة
+    globalData.serviceLinks[serviceLinkIndex] = {
+      rawServiceId: newRawServiceId,
+      mainCategory: newMainCategory,
+      subCategory: newSubCategory || '',
+      subSubCategory: newSubSubCategory || '',
+      name: newName,
+      quantity: newQty
+    };
+    
+    console.log('تم تحديث رابط الخدمة في المصفوفة:', globalData.serviceLinks[serviceLinkIndex]);
+    
+    // تحديث الخدمات وحفظ البيانات
+    const updateResult = await updateServicesFromLinks();
+    
+    hideLoading();
+    closeModal();
+    
+    // إعلام المستخدم بنتيجة العملية
+    if (updateResult) {
+      showToast('تم حفظ التعديلات وتحديث البيانات بنجاح');
+    } else {
+      showToast('تم تعديل الخدمة لكن فشل حفظ البيانات', true);
+    }
+    
+    // تحديث عرض الخدمات
+    filterServices();
+    
+    return updateResult;
+  } catch (error) {
+    console.error('خطأ في حفظ تعديلات الخدمة:', error);
+    hideLoading();
+    showToast(`خطأ في حفظ التعديلات: ${error.message}`, true);
+    return false;
+  }
 }
 
 function closeModal() {
@@ -661,6 +1189,145 @@ async function checkServerStatus() {
   }
 }
 
+/** إنشاء نسخة احتياطية يدوية لملف البيانات */
+async function createManualBackup() {
+  try {
+    showLoading('جاري إنشاء نسخة احتياطية...');
+    
+    const response = await fetch(API_ENDPOINTS.CREATE_BACKUP);
+    const result = await response.json();
+    
+    hideLoading();
+    
+    if (response.ok) {
+      if (result.status === 'success') {
+        // تم إنشاء النسخة الاحتياطية بنجاح
+        const backupFile = result.backupFile;
+        const backups = result.backups;
+        
+        // عرض رسالة نجاح
+        showToast('تم إنشاء نسخة احتياطية بنجاح');
+        
+        // عرض معلومات النسخة الاحتياطية
+        console.info('معلومات النسخة الاحتياطية:', backupFile);
+        
+        // إذا كانت هناك نسخ احتياطية متعددة، عرض قائمة بها
+        if (backups && backups.length > 0) {
+          let backupInfo = `تم إنشاء نسخة احتياطية جديدة:\n` +
+                        `اسم الملف: ${backupFile.name}\n` +
+                        `الحجم: ${Math.round(backupFile.size / 1024)} كيلوبايت\n\n`;
+          
+          backupInfo += `النسخ الاحتياطية المتوفرة (${backups.length}):\n`;
+          
+          // إضافة أول 3 نسخ احتياطية للقائمة
+          const displayBackups = backups.slice(0, 3);
+          displayBackups.forEach((backup, index) => {
+            const backupDate = new Date(backup.created).toLocaleString('ar');
+            const backupSize = Math.round(backup.size / 1024);
+            backupInfo += `${index + 1}. ${backup.name} (${backupSize} كيلوبايت) - ${backupDate}\n`;
+          });
+          
+          if (backups.length > 3) {
+            backupInfo += `... و${backups.length - 3} نسخ احتياطية أخرى`;
+          }
+          
+          alert(backupInfo);
+        } else {
+          alert(`تم إنشاء نسخة احتياطية جديدة: ${backupFile.name}`);
+        }
+        
+        return true;
+      } else {
+        // حالة غير متوقعة
+        console.warn('حالة غير متوقعة من الخادم:', result);
+        showToast(`حالة غير متوقعة: ${result.status}`, true);
+        return false;
+      }
+    } else {
+      // خطأ في الطلب
+      const errorMsg = result.error || 'خطأ غير معروف أثناء إنشاء نسخة احتياطية';
+      console.error('خطأ في إنشاء نسخة احتياطية:', result);
+      showToast(errorMsg, true);
+      return false;
+    }
+  } catch (error) {
+    console.error('خطأ أثناء إنشاء النسخة الاحتياطية:', error);
+    hideLoading();
+    showToast(`خطأ في إنشاء النسخة الاحتياطية: ${error.message}`, true);
+    return false;
+  }
+}
+
+/** التحقق من سلامة ملف JSON */
+async function checkJsonIntegrity() {
+  try {
+    showLoading('جاري التحقق من سلامة ملف البيانات...');
+    
+    const response = await fetch(API_ENDPOINTS.CHECK_JSON_INTEGRITY);
+    const result = await response.json();
+    
+    hideLoading();
+    
+    if (response.ok) {
+      // التحقق من نتيجة الفحص
+      const status = result.status;
+      const report = result.integrityReport;
+      
+      if (status === 'ok') {
+        // الملف سليم
+        showToast('ملف البيانات سليم ويحتوي على بنية صحيحة');
+        
+        // عرض معلومات إضافية
+        console.info('تقرير سلامة الملف:', report);
+        alert(
+          `تقرير سلامة ملف البيانات:\n\n` +
+          `حالة الملف: سليم\n` +
+          `عدد التصنيفات: ${report.counts.categories}\n` +
+          `عدد الخدمات: ${report.counts.services}\n` +
+          `عدد الخدمات الخام: ${report.counts.rawServices}\n` +
+          `حجم الملف: ${report.file.sizeKB} كيلوبايت\n` +
+          `آخر تحديث: ${new Date(report.file.lastModified).toLocaleString('ar')}`
+        );
+        
+        return true;
+      } else if (status === 'warning') {
+        // هناك مشكلة محتملة في الملف
+        showToast(`تحذير: ملف البيانات قد يحتوي على مشكلات`, true);
+        
+        // عرض التفاصيل
+        console.warn('تحذير في سلامة الملف:', result);
+        
+        if (!report.structure.hasCategories) {
+          alert('تحذير: ملف البيانات لا يحتوي على تصنيفات صالحة');
+        } else if (!report.structure.hasServices || !report.structure.hasRawServices) {
+          alert('تحذير: ملف البيانات لا يحتوي على مصفوفات الخدمات المطلوبة');
+        } else if (!report.consistency.servicesConsistent) {
+          alert('تحذير: هناك تناقض بين عدد الخدمات والخدمات الخام');
+        } else {
+          alert(`تحذير: هناك مشكلة غير محددة في ملف البيانات. التفاصيل في وحدة التحكم.`);
+        }
+        
+        return false;
+      } else {
+        // حالة غير متوقعة
+        showToast(`حالة غير معروفة: ${status}`, true);
+        return false;
+      }
+    } else {
+      // خطأ في الطلب
+      const errorMsg = result.error || 'خطأ غير معروف أثناء التحقق من سلامة الملف';
+      console.error('خطأ في التحقق من سلامة الملف:', result);
+      showToast(errorMsg, true);
+      return false;
+    }
+  } catch (error) {
+    console.error('خطأ أثناء التحقق من سلامة الملف:', error);
+    hideLoading();
+    showToast(`خطأ في التحقق من سلامة الملف: ${error.message}`, true);
+    return false;
+  }
+}
+
 // تفقد حالة الخادم بشكل دوري
 function setupConnectionMonitoring() {
   // تحقق من الاتصال مباشرة
@@ -726,20 +1393,70 @@ function editRawService(serviceId) {
   modalOverlay.style.display = 'flex';
 }
 
-function deleteRawService(serviceId) {
-  serviceId = Number(serviceId);
-  const serviceIndex = globalData.rawServices.findIndex(service => service.id === serviceId);
-  if (serviceIndex === -1) return showToast('الخدمة الخام غير موجودة', true);
-  const linksCount = countServiceLinks(serviceId);
-  if (linksCount > 0 && !confirm(`هذه الخدمة مرتبطة بـ ${linksCount} تصنيف. هل أنت متأكد من حذفها؟ (سيتم حذف جميع الارتباطات أيضًا)`)) return;
-  globalData.serviceLinks = globalData.serviceLinks.filter(link => link.rawServiceId !== serviceId);
-  globalData.rawServices.splice(serviceIndex, 1);
-  filteredRawServices = filteredRawServices.filter(service => service.id !== serviceId);
-  saveData();
-  renderRawServices();
-  renderServices();
-  populateRawServiceSelect();
-  showToast('تم حذف الخدمة الخام بنجاح');
+/** حذف خدمة خام مع جميع الروابط المرتبطة بها */
+async function deleteRawService(serviceId) {
+  try {
+    // تحويل المعرف إلى رقم
+    serviceId = Number(serviceId);
+    
+    // التحقق من وجود الخدمة الخام
+    const serviceIndex = globalData.rawServices.findIndex(service => service.id === serviceId);
+    if (serviceIndex === -1) {
+      showToast('الخدمة الخام غير موجودة', true);
+      return false;
+    }
+    
+    // حساب عدد الروابط المرتبطة بهذه الخدمة
+    const linksCount = countServiceLinks(serviceId);
+    
+    // تأكيد الحذف إذا كانت هناك روابط
+    const confirmMessage = linksCount > 0 
+      ? `هذه الخدمة مرتبطة بـ ${linksCount} تصنيف. هل أنت متأكد من حذفها؟ (سيتم حذف جميع الارتباطات أيضًا)` 
+      : 'هل أنت متأكد من حذف هذه الخدمة الخام؟';
+    
+    if (!confirm(confirmMessage)) return false;
+    
+    showLoading('جاري حذف الخدمة الخام...');
+    
+    // حذف جميع الروابط المتعلقة بهذه الخدمة
+    const previousLinksCount = globalData.serviceLinks.length;
+    globalData.serviceLinks = globalData.serviceLinks.filter(link => link.rawServiceId !== serviceId);
+    const removedLinks = previousLinksCount - globalData.serviceLinks.length;
+    console.log(`تم حذف ${removedLinks} رابط مرتبط بالخدمة الخام`);
+    
+    // حذف الخدمة الخام من المصفوفة
+    globalData.rawServices.splice(serviceIndex, 1);
+    
+    // تحديث الخدمات بناءً على الروابط الجديدة
+    await updateServicesFromLinks(false); // لا حاجة لحفظ البيانات هنا لأننا سنحفظها لاحقًا
+    
+    // تحديث مصفوفة الخدمات الخام المصفاة
+    filteredRawServices = filteredRawServices.filter(service => service.id !== serviceId);
+    
+    // حفظ جميع التغييرات
+    const saveResult = await saveData(false);
+    
+    hideLoading();
+    
+    // تحديث عناصر الواجهة
+    renderRawServices();
+    renderServices();
+    populateRawServiceSelect();
+    
+    // إعلام المستخدم بنتيجة العملية
+    if (saveResult) {
+      showToast(`تم حذف الخدمة الخام و${removedLinks > 0 ? ` ${removedLinks} روابط مرتبطة بها` : ''} بنجاح`);
+    } else {
+      showToast('تم حذف الخدمة الخام لكن فشل حفظ البيانات', true);
+    }
+    
+    return saveResult;
+  } catch (error) {
+    console.error('خطأ في حذف الخدمة الخام:', error);
+    hideLoading();
+    showToast(`خطأ في حذف الخدمة الخام: ${error.message}`, true);
+    return false;
+  }
 }
 
 function countServiceLinks(rawServiceId) {
@@ -841,63 +1558,155 @@ function updateLinkSubSubCatSel() {
   updateSelectedRawServiceInfo();
 }
 
-function linkServiceToCategory() {
-  const rawServiceId = Number(document.getElementById('selectRawService').value);
-  const mainCat = document.getElementById('linkMainCatSel').value;
-  const subCat = document.getElementById('linkSubCatSel').value;
-  const subSubCat = document.getElementById('linkSubSubCatSel').value;
-  const serviceName = document.getElementById('linkServiceName').value.trim();
-  const quantity = Number(document.getElementById('linkQuantity').value);
-  if (!rawServiceId || !mainCat || !serviceName || !quantity)
-    return showToast('الرجاء تعبئة الحقول المطلوبة: الخدمة، التصنيف الرئيسي، اسم الخدمة، والكمية', true);
-  const rawService = globalData.rawServices.find(s => s.id === rawServiceId);
-  if (!rawService) return showToast('الخدمة الخام غير موجودة', true);
-  const exists = globalData.serviceLinks.find(link => 
-    link.rawServiceId === rawServiceId &&
-    link.mainCategory === mainCat &&
-    link.subCategory === subCat &&
-    link.subSubCategory === subSubCat
-  );
-  if (exists) return showToast('هذا الربط موجود مسبقاً', true);
-  const newLink = {
-    rawServiceId: rawServiceId,
-    mainCategory: mainCat,
-    subCategory: subCat || "",
-    subSubCategory: subSubCat || "",
-    name: serviceName,
-    quantity: quantity
-  };
-  globalData.serviceLinks.push(newLink);
-  updateServicesFromLinks();
-  saveData();
-  showToast('تم ربط الخدمة بالتصنيف بنجاح');
-  document.getElementById('linkQuantity').value = '';
-  filterServices();
+/** ربط خدمة خام بتصنيف محدد */
+async function linkServiceToCategory() {
+  try {
+    showLoading('جاري ربط الخدمة بالتصنيف...');
+    
+    // الحصول على قيم الحقول
+    const rawServiceId = Number(document.getElementById('selectRawService').value);
+    const mainCat = document.getElementById('linkMainCatSel').value;
+    const subCat = document.getElementById('linkSubCatSel').value;
+    const subSubCat = document.getElementById('linkSubSubCatSel').value;
+    const serviceName = document.getElementById('linkServiceName').value.trim();
+    const quantity = Number(document.getElementById('linkQuantity').value);
+    
+    // التحقق من إدخال الحقول المطلوبة
+    if (!rawServiceId || !mainCat || !serviceName || !quantity) {
+      hideLoading();
+      showToast('الرجاء تعبئة الحقول المطلوبة: الخدمة، التصنيف الرئيسي، اسم الخدمة، والكمية', true);
+      return;
+    }
+    
+    // التحقق من وجود الخدمة الخام
+    const rawService = globalData.rawServices.find(s => s.id === rawServiceId);
+    if (!rawService) {
+      hideLoading();
+      showToast('الخدمة الخام غير موجودة', true);
+      return;
+    }
+    
+    // التحقق من عدم وجود الربط مسبقاً
+    const exists = globalData.serviceLinks.find(link => 
+      link.rawServiceId === rawServiceId &&
+      link.mainCategory === mainCat &&
+      link.subCategory === subCat &&
+      link.subSubCategory === subSubCat
+    );
+    
+    if (exists) {
+      hideLoading();
+      showToast('هذا الربط موجود مسبقاً', true);
+      return;
+    }
+    
+    // إنشاء رابط جديد
+    const newLink = {
+      rawServiceId: rawServiceId,
+      mainCategory: mainCat,
+      subCategory: subCat || "",
+      subSubCategory: subSubCat || "",
+      name: serviceName,
+      quantity: quantity
+    };
+    
+    // إضافة الرابط إلى مصفوفة الروابط
+    globalData.serviceLinks.push(newLink);
+    
+    // تحديث الخدمات وحفظ البيانات
+    const updateResult = await updateServicesFromLinks();
+    
+    hideLoading();
+    
+    // التحقق من نجاح التحديث
+    if (updateResult) {
+      showToast('تم ربط الخدمة بالتصنيف وحفظ البيانات بنجاح');
+      // إعادة تعيين حقل الكمية
+      document.getElementById('linkQuantity').value = '';
+      document.getElementById('linkServiceName').value = '';
+    } else {
+      showToast('تم ربط الخدمة بالتصنيف لكن فشل حفظ البيانات', true);
+    }
+    
+    // تحديث عرض الخدمات
+    filterServices();
+  } catch (error) {
+    console.error('خطأ في ربط الخدمة بالتصنيف:', error);
+    hideLoading();
+    showToast(`خطأ في ربط الخدمة: ${error.message}`, true);
+  }
 }
 
-function updateServicesFromLinks() {
+/** تحديث الخدمات بناءً على روابط الخدمات مع التصنيفات */
+async function updateServicesFromLinks() {
   try {
-    if (!globalData.serviceLinks || !globalData.rawServices) return;
+    console.log('بدء تحديث الخدمات من روابط التصنيفات...');
+    
+    // التحقق من وجود البيانات المطلوبة
+    if (!Array.isArray(globalData.serviceLinks)) {
+      console.error('مصفوفة روابط الخدمات غير موجودة أو غير صالحة');
+      showToast('خطأ في بنية روابط الخدمات', true);
+      return false;
+    }
+    
+    if (!Array.isArray(globalData.rawServices)) {
+      console.error('مصفوفة الخدمات الخام غير موجودة أو غير صالحة');
+      showToast('خطأ في بنية الخدمات الخام', true);
+      return false;
+    }
+    
+    // إعادة بناء مصفوفة الخدمات
     globalData.services = [];
+    let missingServicesCount = 0;
+    
     globalData.serviceLinks.forEach(link => {
+      // التحقق من صحة بنية الرابط
+      if (!link || typeof link !== 'object' || !link.rawServiceId) {
+        console.warn('تم العثور على رابط خدمة غير صالح:', link);
+        return;
+      }
+      
+      // البحث عن الخدمة الخام المرتبطة
       const rawService = globalData.rawServices.find(s => s.id === link.rawServiceId);
-      if (!rawService) return;
+      if (!rawService) {
+        console.warn(`الخدمة الخام غير موجودة: ${link.rawServiceId}`);
+        missingServicesCount++;
+        return;
+      }
+      
+      // إنشاء سجل خدمة جديد
       const service = {
         id: rawService.id,
         mainCategory: link.mainCategory,
-        subCategory: link.subCategory,
-        subSubCategory: link.subSubCategory,
-        name: link.name,
-        quantity: link.quantity,
+        subCategory: link.subCategory || '',
+        subSubCategory: link.subSubCategory || '',
+        name: link.name || rawService.defaultName,
+        quantity: link.quantity || 1,
         provider: rawService.provider
       };
+      
       globalData.services.push(service);
     });
+    
+    console.log(`تم تحديث ${globalData.services.length} خدمة. خدمات مفقودة: ${missingServicesCount}`);
+    
+    // تحديث المصفوفة المصفاة للعرض
     filteredServices = [...globalData.services];
-    saveData();
+    
+    // حفظ البيانات مع التأكد من النجاح
+    const saveResult = await saveData(false);
+    if (!saveResult) {
+      console.error('فشل في حفظ البيانات بعد تحديث الخدمات');
+      showToast('تم تحديث الخدمات لكن فشل الحفظ', true);
+    }
+    
+    // تحديث العرض
     renderServices();
+    return saveResult;
   } catch (error) {
     console.error('خطأ في تحديث الخدمات من روابط الخدمات:', error);
+    showToast(`خطأ في تحديث الخدمات: ${error.message}`, true);
+    return false;
   }
 }
 

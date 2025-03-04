@@ -495,6 +495,19 @@
     .balanceSection {
       margin-bottom: 20px;
     }
+    
+    /* Estilos para los botones de acción */
+    .actionButtons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    .actionButtons button {
+      min-width: 150px;
+    }
   </style>
 </head>
 <body>
@@ -504,7 +517,11 @@
     <header>
       <h2>إدارة الخدمات والتصنيفات</h2>
       <div class="desc">يمكنك إضافة التصنيفات والخدمات وتعديلها وحذفها</div>
-      <button class="secBtn" onclick="window.location.href='index.html'">العودة للطلبات</button>
+      <div class="actionButtons">
+        <button class="secBtn" onclick="window.location.href='index.html'">العودة للطلبات</button>
+        <button class="secBtn" style="background-color: #5a6268;" onclick="checkJsonIntegrity()">فحص سلامة ملف البيانات</button>
+        <button class="secBtn" style="background-color: #28a745;" onclick="createManualBackup()">إنشاء نسخة احتياطية</button>
+      </div>
     </header>
 
     <!-- قسم عرض أرصدة المزودين -->
