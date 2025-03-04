@@ -8,6 +8,12 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// تعريف المسارات للملفات والمجلدات
+const publicPath = path.join(process.cwd(), 'public');
+const dataDirectory = path.join(process.cwd(), 'data');
+const servicesFilePath = path.join(dataDirectory, 'servicesData.json');
+const publicServicesPath = path.join(publicPath, 'servicesData.json');
+
 // متغيرات البيئة (Environment Variables)
 const DRD3M_API_KEY = process.env.DRD3M_API_KEY;
 const SEOCLEVERS_API_KEY = process.env.SEOCLEVERS_API_KEY;
@@ -28,7 +34,6 @@ app.options('*', (req, res) => {
 });
 
 // تقديم الملفات الثابتة من مجلد public
-const publicPath = path.join(process.cwd(), 'public');
 app.use(express.static(publicPath));
 
 // عند فتح الصفحة الرئيسية، يتم إرسال index.html
@@ -56,15 +61,29 @@ app.post('/api/check-password', (req, res) => {
   }
 });
 
-// تحميل البيانات من ملف JSON (يُقدم ملف servicesData.json من public)
+// تحميل البيانات من ملف JSON (يُقدم ملف servicesData.json من مساره الجديد)
 app.get('/servicesData.json', (req, res) => {
   try {
-    const data = fs.readFileSync(path.join(publicPath, 'servicesData.json'), 'utf8');
+    // تغيير المسار إلى المسار الجديد في مجلد البيانات
+    const data = fs.readFileSync(servicesFilePath, 'utf8');
     res.setHeader('Content-Type', 'application/json');
     res.send(data);
   } catch (err) {
     console.error('Error reading servicesData.json:', err);
     res.status(500).json({ error: 'Failed to read services data' });
+  }
+});
+
+// نقطة نهاية API جديدة للوصول إلى البيانات من المسار الجديد
+app.get('/api/services-data', (req, res) => {
+  console.log('تم طلب البيانات من المسار الجديد:', servicesFilePath);
+  try {
+    const data = fs.readFileSync(servicesFilePath, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch (err) {
+    console.error('خطأ في قراءة ملف البيانات:', err);
+    res.status(500).json({ error: 'فشل في قراءة ملف البيانات' });
   }
 });
 
@@ -191,8 +210,7 @@ app.post('/api/update-services', (req, res) => {
     
     // عمل نسخة احتياطية من الملف الحالي قبل التحديث
     const currentDate = new Date().toISOString().replace(/:/g, '-').replace(/\./g, '_');
-    const backupPath = path.join(process.cwd(), 'backups');
-    const servicesFilePath = path.join(publicPath, 'servicesData.json');
+    const backupPath = path.join(dataDirectory, 'backups');
     
     // التأكد من وجود مجلد النسخ الاحتياطية
     if (!fs.existsSync(backupPath)) {
@@ -407,7 +425,7 @@ app.get('/api/create-backup', (req, res) => {
   console.log('جاري إنشاء نسخة احتياطية يدوية لملف البيانات');
   
   try {
-    const servicesFilePath = path.join(publicPath, 'servicesData.json');
+    // استخدام المسار الجديد للملف
     
     // التحقق من وجود الملف
     if (!fs.existsSync(servicesFilePath)) {
@@ -508,7 +526,7 @@ app.get('/api/check-json-integrity', (req, res) => {
   console.log('جاري التحقق من سلامة ملف البيانات');
   
   try {
-    const servicesFilePath = path.join(publicPath, 'servicesData.json');
+    // استخدام المسار الجديد للملف
     
     // التحقق من وجود الملف
     if (!fs.existsSync(servicesFilePath)) {

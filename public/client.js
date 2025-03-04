@@ -82,6 +82,7 @@ async function loadData() {
     
     // محاولة تحميل البيانات من عدة مسارات محتملة
     const possiblePaths = [
+      '/api/services-data', // نقطة النهاية API الجديدة أولاً
       '/servicesData.json',
       './servicesData.json',
       '../servicesData.json',
@@ -96,7 +97,7 @@ async function loadData() {
         const response = await fetch(path);
         if (response.ok) {
           data = await response.json();
-          updateConnectionStatus('success', 'تم الاتصال بالخادم بنجاح');
+          // لا حاجة لإظهار رسالة اتصال ناجح
           break; // الخروج من الحلقة عند النجاح
         }
       } catch (error) {
@@ -417,7 +418,7 @@ async function checkServerStatus() {
     if (response.ok) {
       const data = await response.json();
       if (data.status === 'online') {
-        updateConnectionStatus('success', 'الخادم يعمل بشكل طبيعي');
+        // لا حاجة لإظهار رسالة الخادم يعمل بشكل طبيعي
         return true;
       }
     }

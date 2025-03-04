@@ -76,7 +76,7 @@ async function loadData() {
     // محاولة تحميل البيانات من الملف
     console.log('جاري تحميل البيانات من الملف...');
     let data = null;
-    const paths = ['/servicesData.json', './servicesData.json', '../servicesData.json'];
+    const paths = ['/api/services-data', '/servicesData.json', './servicesData.json', '../servicesData.json'];
     
     for (let path of paths) {
       try {
@@ -84,7 +84,7 @@ async function loadData() {
         if (response.ok) {
           data = await response.json();
           console.log(`تم جلب البيانات من: ${path}`);
-          updateConnectionStatus('success', 'تم الاتصال بالخادم بنجاح');
+          // لا حاجة لإظهار رسالة اتصال ناجح
           break;
         }
       } catch (err) {
@@ -1177,7 +1177,7 @@ async function checkServerStatus() {
     if (response.ok) {
       const data = await response.json();
       if (data.status === 'online') {
-        updateConnectionStatus('success', 'الخادم يعمل بشكل طبيعي');
+        // لا حاجة لإظهار رسالة الخادم يعمل بشكل طبيعي
         return true;
       }
     }
